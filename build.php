@@ -20,12 +20,13 @@ if (in_array("v$version", $tags)) {
 $accessTokenCmd = 'composer config --global "github-oauth.github.com"';
 $accessToken = shell_exec($accessTokenCmd);
 
-$releaseCmd = strtr('curl --silent --data \'{"tag_name": "v%version%","target_commitish": "master","name": "v%version%","body": "Release %version% (%date%)","draft": false,"prerelease": false}\' https://api.github.com/repos/%owner%/%repository%/releases?access_token=%access_token%', array(
+$releaseCmd = strtr('curl --silent --data \'{"tag_name": "v%version%","target_commitish": "master","name": "v%version%","body": "Release %version% (%date%)","draft": false,"prerelease": %prerelease%}\' https://api.github.com/repos/%owner%/%repository%/releases?access_token=%access_token%', array(
     '%date%' => date('Y-m-d'),
     '%version%' => $version,
     '%access_token%' => $accessToken,
     '%repository%' => 'subway',
-    '%owner%' => 'eymengunay'
+    '%owner%' => 'eymengunay',
+    '%prerelease%' => isset($argv[2]) && trim($argv[2]) === 'pre' ? 'true' : 'false'
 ));
 echo "Creating new release...\n";
 shell_exec($releaseCmd);
