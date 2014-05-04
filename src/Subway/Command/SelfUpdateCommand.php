@@ -48,7 +48,7 @@ class SelfUpdateCommand extends Command
             return 1;
         }
 
-        $currentVersion = $this->getApplication()->getVersion();
+        $currentVersion = ltrim($this->getApplication()->getVersion(), 'v');
         $allowMajor = $input->getOption('major');
 
         if ($manager->update($currentVersion, $allowMajor)) {
