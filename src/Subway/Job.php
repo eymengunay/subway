@@ -16,6 +16,11 @@ namespace Subway;
  */
 abstract class Job
 {
+    const STATUS_WAITING  = 1;
+    const STATUS_RUNNING  = 2;
+    const STATUS_FAILED   = 3;
+    const STATUS_COMPLETE = 4;
+
     /**
      * Perform job
      * 
