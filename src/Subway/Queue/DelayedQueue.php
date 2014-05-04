@@ -31,10 +31,23 @@ class DelayedQueue extends Queue
     }
 
     /**
-     * Create queue
+     * {@inheritdoc}
      */
     public function create()
     {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function clear()
+    {
+        $timestamps = $this->redis->zrangebyscore(sprintf('resque:%s_queue_schedule', $this->getName()), '-inf', 'inf');
+        foreach ($timestamps as $timestamp) {
+            $this->redis->del(sprintf('resque:%s:%s', $this->getName(), $timestamp));    
+        }
+        $this->redis->del(sprintf('resque:%s_queue_schedule', $this->getName()));
     }
 
     /**
@@ -42,7 +55,13 @@ class DelayedQueue extends Queue
      */
     public function count()
     {
-        return $this->redis->zcard(sprintf('resque:queue:%s', $this->getName()));
+        $count = 0;
+        $timestamps = $this->redis->zrangebyscore(sprintf('resque:%s_queue_schedule', $this->getName()), '-inf', 'inf');
+        foreach ($timestamps as $timestamp) {
+            $count += $this->redis->llen(sprintf('resque:%s:%s', $this->getName(), $timestamp));
+        }
+
+        return $count;
     }
 
     /**
@@ -50,13 +69,16 @@ class DelayedQueue extends Queue
      */
     public function getJobs()
     {
-        $jobs = $this->redis->zrange(sprintf('resque:queue:%s', $this->getName()), 0, -1) ?: array();
-        $data = array();
-        foreach ($jobs as $job) {
-            $data[] = json_decode($job, true);
+        $jobs = array();
+        $timestamps = $this->redis->zrangebyscore(sprintf('resque:%s_queue_schedule', $this->getName()), '-inf', 'inf');
+        foreach ($timestamps as $timestamp) {
+            $items = $this->redis->lrange(sprintf('resque:queue:%s', $this->getName()), 0, -1) ?: array();
+            foreach ($items as $item) {
+                $jobs[] = json_decode($item, true);
+            }
         }
 
-        return $data;
+        return $jobs;
     }
 
     /**
@@ -64,27 +86,17 @@ class DelayedQueue extends Queue
      */
     public function pop()
     {
-        $key = sprintf('resque:queue:%s', $this->getName());
-        $item = null;
-        $options = array(
-            'cas'   => true,    // Initialize with support for CAS operations
-            'watch' => $key,    // Key that needs to be WATCHed to detect changes
-            'retry' => 3,       // Number of retries on aborted transactions, after
-                                // which the client bails out with an exception.
-        );
+        $timestamps = $this->redis->zrangebyscore(sprintf('resque:%s_queue_schedule', $this->getName()), '-inf', time(), array('limit' => array(0, 1)));
+        if (empty($timestamps)) {
+            return null;
+        }
 
-        $this->redis->multiExec($options, function($tx) use ($key, &$item) {
-            $max = new \DateTime();
-            @list($item) = $tx->zrangebyscore($key, 0, $max->format('U'));
+        $key = sprintf('resque:%s:%s', $this->getName(), $timestamps[0]);
+        $item = $this->redis->lpop($key);
 
-            if (isset($item)) {
-                $tx->multi();   // With CAS, MULTI *must* be explicitly invoked.
-                $tx->zrem($key, $item);
-            }
-        });
-
-        if (is_null($item)) {
-            return;
+        if ($this->redis->llen($key) == 0) {
+            $this->redis->del($key);
+            $this->redis->zrem(sprintf('resque:%s_queue_schedule', $this->getName()), $timestamps[0]);
         }
 
         return json_decode($item, true);
@@ -96,9 +108,11 @@ class DelayedQueue extends Queue
     public function put(array $data)
     {
         $at = $data['at']->format('U');
-        unset($data['at']);
-        $data['id'] = $this->generateJobId($data);
-        $this->redis->zadd(sprintf('resque:queue:%s', $this->getName()), $at, json_encode($data));
+        if (array_key_exists('id', $data) === false) {
+            $data['id'] = $this->generateJobId($data);
+        }
+        $this->redis->rpush(sprintf('resque:%s:%s', $this->getName(), $at), json_encode($data));
+        $this->redis->zadd(sprintf('resque:%s_queue_schedule', $this->getName()), $at, $at);
 
         return $data['id'];
     }
