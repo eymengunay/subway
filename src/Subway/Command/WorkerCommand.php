@@ -316,7 +316,7 @@ class WorkerCommand extends RedisAwareCommand
 |___/\__,_|_.__/ \_/\_/ \__,_|\__, |    |    Date: %date%
            <info>%version%</info> |___/     |
 ", array(
-    '%version%' => str_pad('v'.$this->getApplication()->getVersion(), 18, ' ', STR_PAD_LEFT),
+    '%version%' => str_pad('v'.ltrim($this->getApplication()->getVersion(), 'v'), 18, ' ', STR_PAD_LEFT),
     '%host%'    => gethostname(),
     '%pid%'     => getmypid(),
     '%date%'    => date('c')
