@@ -11,6 +11,7 @@
 
 namespace Subway;
 
+use Subway\Job;
 use Subway\Factory;
 use Subway\Exception\SubwayException;
 
@@ -44,12 +45,10 @@ class Worker
     /**
      * Perform job
      *
-     * @param  array   $job
-     * @param  closure $onSuccess
-     * @param  closure $onFailure
+     * @param  array $job
      * @return bool
      */
-    public function perform(array $job, $onSuccess = null, $onFailure = null)
+    public function perform(array $job)
     {
         if (!class_exists($job['class'])) {
             throw new SubwayException('Could not find job class ' . $job['class']);
@@ -60,18 +59,36 @@ class Worker
         }
 
         $instance = new $job['class'];
+        $logger = $this->factory->getLogger();
 
         try {
-            $this->factory->updateStatus($job['id'], Factory::STATUS_RUNNING);
+            $this->factory->updateStatus($job['id'], Job::STATUS_RUNNING);
             $instance->perform($job['args']);
-            $this->factory->updateStatus($job['id'], Factory::STATUS_COMPLETE);
+            $this->factory->updateStatus($job['id'], Job::STATUS_COMPLETE);
 
             $this->factory->getRedis()->incrby('resque:stat:processed', 1);
             $this->factory->getRedis()->incrby('resque:stat:processed:'.$this->id, 1);
+
+            if ($logger) {
+                $logger->addNotice(sprintf('[%s][%s] Job finised successfully. Mem: %sMB', date('Y-m-d\TH:i:s'), $job['id'], round(memory_get_peak_usage() / 1024 / 1024, 2)));
+            }
         } catch (\Exception $e) {
-            $this->factory->updateStatus($job['id'], Factory::STATUS_FAILED);
+            $this->factory->updateStatus($job['id'], Job::STATUS_FAILED);
             $this->factory->getRedis()->incrby('resque:stat:failed', 1);
             $this->factory->getRedis()->incrby('resque:stat:failed:'.$this->id, 1);
+            $this->factory->getRedis()->rpush('resque:failed', json_encode(array(
+                'failed_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
+                'payload'   => $job,
+                'exception' => get_class($e),
+                'error'     => $e->getMessage(),
+                'backtrace' => explode("\n", $e->getTraceAsString()),
+                'worker'    => $this->id,
+                'queue'     => $job['queue'],
+            )));
+            
+            if ($logger) {
+                $logger->addError(sprintf('[%s][%s] Job execution failed. %s:%s', date('Y-m-d\TH:i:s'), $job['id'], get_class($e), $e->getMessage()));
+            }
 
             return false;
         }

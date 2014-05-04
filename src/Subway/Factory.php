@@ -13,9 +13,12 @@ namespace Subway;
 
 use Subway\Events;
 use Subway\Queue;
+use Subway\Job;
 use Subway\Queue\DelayedQueue;
 use Subway\Queue\RepeatingQueue;
 use Predis\Client;
+use Psr\Log\LoggerInterface;
+use Monolog\Logger;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -24,11 +27,6 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
  */
 class Factory
 {
-    const STATUS_WAITING  = 1;
-    const STATUS_RUNNING  = 2;
-    const STATUS_FAILED   = 3;
-    const STATUS_COMPLETE = 4;
-
     /**
      * @var Client
      */
@@ -38,6 +36,11 @@ class Factory
      * @var EventDispatcher
      */
     protected $dispatcher;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
 
     /**
      * Class constructor
@@ -72,7 +75,10 @@ class Factory
     public function getQueues($selected = array())
     {
         $array  = array();
-        $queues = empty($selected) ? $this->redis->smembers('resque:queues') : $selected;
+        $queues = $selected;
+        if (empty($selected)) {
+            $queues = $this->redis->smembers('resque:queues') ?: array();
+        }
         foreach ($queues as $queue) {
             $array[$queue] = $this->getQueue($queue);
         }
@@ -149,10 +155,18 @@ class Factory
     public function enqueue($queue, $class, $args = array())
     {
         $id = $this->getQueue($queue)->put(array(
+            'queue' => $queue,
             'class' => $class,
             'args'  => $args
         ));
-        $this->updateStatus($id, self::STATUS_WAITING);
+        $this->updateStatus($id, Job::STATUS_WAITING);
+
+        if ($this->logger) {
+            $this->logger->addNotice("Job $id enqueued in $queue", array(
+                'class' => $class,
+                'args'  => $args
+            ));
+        }
 
         return $id;
     }
@@ -169,12 +183,22 @@ class Factory
      */
     public function enqueueDelayed(\DateTime $at, $queue, $class, $args = array())
     {
-        return $this->getDelayedQueue()->put(array(
+        $id = $this->getDelayedQueue()->put(array(
             'at'    => $at,
             'queue' => $queue,
             'class' => $class,
             'args'  => $args
         ));
+
+        if ($this->logger) {
+            $datestr = $at->format('Y-m-d\TH:i:s');
+            $this->logger->addNotice("Delayed job $datestr $id enqueued in $queue", array(
+                'class' => $class,
+                'args'  => $args
+            ));
+        }
+
+        return $id;
     }
 
     /**
@@ -188,12 +212,21 @@ class Factory
      */
     public function enqueueRepeating($intervalSpec, $queue, $class, $args = array())
     {
-        return $this->getRepeatingQueue()->put(array(
+        $id = $this->getRepeatingQueue()->put(array(
             'interval' => $intervalSpec,
             'queue'    => $queue,
             'class'    => $class,
             'args'     => $args
         ));
+
+        if ($this->logger) {
+            $this->logger->addNotice("Repeating job $intervalSpec $id enqueued in $queue", array(
+                'class' => $class,
+                'args'  => $args
+            ));
+        }
+
+        return $id;
     }
 
     /**
@@ -228,5 +261,27 @@ class Factory
     public function getEventDispatcher()
     {
         return $this->dispatcher;
+    }
+
+    /**
+     * Set logger
+     * 
+     * @param LoggerInterface $logger
+     */
+    public function setLogger(LoggerInterface $logger = null)
+    {
+        $this->logger = $logger;
+
+        return $this;
+    }
+
+    /**
+     * Get logger
+     * 
+     * @return LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
     }
 }
