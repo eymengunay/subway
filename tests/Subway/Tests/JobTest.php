@@ -28,6 +28,6 @@ class JobTest extends \PHPUnit_Framework_TestCase
              ->will($this->returnValue(TRUE))
         ;
 
-        $this->assertTrue($stub->perform($args));
+        $this->assertTrue($stub->perform());
     }
 }

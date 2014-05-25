@@ -44,5 +44,5 @@ abstract class Job
      * 
      * @param array $args 
      */
-    abstract public function perform($args);
+    abstract public function perform();
 }
