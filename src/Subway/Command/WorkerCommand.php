@@ -339,7 +339,7 @@ class WorkerCommand extends RedisAwareCommand
      */
     protected function installSignalHandlers(ArrayCollection $children)
     {
-        $signalHandler = function($signo) use ($children) {
+        $signalHandler = function() use ($children) {
             foreach ($children as $pid => $child) {
                 pcntl_waitpid($pid, $status);
             }
