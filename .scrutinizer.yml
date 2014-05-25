@@ -65,8 +65,8 @@ tools:
                 - 'bin/*'
                 - 'library/*'
             paths: {  }
-before_commands:
-    - 'composer install --dev --prefer-source --no-interaction'
+    external_code_coverage:
+        timeout: 600
 after_commands: {  }
 artifacts: {  }
 build_failure_conditions: {  }
