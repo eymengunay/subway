@@ -4,10 +4,6 @@ subway.log
 # source
 src
 
-# build
-downloads
-subway.phar
-
 # phpunit
 report
 report.txt
