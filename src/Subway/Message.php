@@ -163,7 +163,7 @@ class Message implements \JsonSerializable
      */
     public function setArgs(array $args = array())
     {
-        $this->args = $args;
+        $this->args = new ArrayCollection($args);
 
         return $this;
     }

@@ -26,7 +26,8 @@ class QueueTest extends TestCase
     {
         $queue  = $this->factory->getQueue('default');
         $count1 = $queue->count();
-        $message = new Message($queue->getName(), 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $message = new Message($queue->getName(), 'Subway\Tests\Job\Md5Job');
+        $message->setArgs(array('hello' => 'world'));
         $queue->put($message);
         $count2 = $queue->count();
 
