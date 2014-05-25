@@ -6,7 +6,7 @@
 [![Total Downloads](https://poser.pugx.org/eo/subway/downloads.png)](https://packagist.org/packages/eo/subway)
 [![Latest Stable Version](https://poser.pugx.org/eo/subway/v/stable.png)](https://packagist.org/packages/eo/subway)
 
-Nuclear reactor powered background job processing for PHP with resque compatible db structure.
+Nuclear reactor powered background job processing for PHP.
 
 ## Features
 * Delayed jobs

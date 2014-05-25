@@ -1,8 +1,8 @@
 {
     "name":        "eo/subway",
     "type":        "library",
-    "description": "My 2 cents on php background job processing",
-    "keywords":    ["job", "task", "background"],
+    "description": "Nuclear reactor powered background job processing for PHP",
+    "keywords":    ["job", "task", "background", "resque"],
     "homepage":    "https://github.com/eymengunay/subway",
     "license":     "MIT",
     "authors": [
