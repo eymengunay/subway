@@ -42,7 +42,7 @@ class WorkerCommand extends RedisAwareCommand
             ->addOption('autoload', 'a', InputOption::VALUE_REQUIRED, 'Application autoloader', './vendor/autoload.php')
             ->addOption('log', 'l', InputOption::VALUE_REQUIRED, 'Log file', './subway.log')
             ->addOption('interval', 'i', InputOption::VALUE_REQUIRED, 'How often to check for new jobs across the queues', 5)
-            ->addOption('concurrent', 'c', InputOption::VALUE_REQUIRED, 'Max concurrent job count', 2)
+            ->addOption('concurrent', 'c', InputOption::VALUE_REQUIRED, 'Max concurrent job count', 5)
             ->addOption('detect-leaks', null, InputOption::VALUE_NONE, 'Output information about memory usage')
 
             ->addArgument('queues', InputArgument::IS_ARRAY, 'Queue names (separate using space)', array())
