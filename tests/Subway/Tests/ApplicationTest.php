@@ -35,6 +35,6 @@ class ApplicationTest extends \PHPUnit_Framework_TestCase
         $application = new Application('Subway', 'test');
         $commands    = array_keys($application->all());
         
-        $this->assertEquals($commands, array('help', 'list', 'worker', 'status', 'clear', 'self-update', 'selfupdate'));
+        $this->assertEquals($commands, array('help', 'list', 'worker', 'status', 'clear', 'self-update', 'selfupdate', 'sample'));
     }
 }

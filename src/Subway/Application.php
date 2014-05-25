@@ -32,6 +32,7 @@ class Application extends BaseApplication
         $defaultCommands[] = new Commands\StatusCommand();
         $defaultCommands[] = new Commands\ClearCommand();
         $defaultCommands[] = new Commands\SelfUpdateCommand();
+        $defaultCommands[] = new Commands\SampleCommand();
 
         return $defaultCommands;
     }
