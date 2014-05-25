@@ -58,16 +58,31 @@ class WorkerCommand extends RedisAwareCommand
     {
         parent::initialize($input, $output);
 
+        // Current working dir
         if ($cwd = $input->getOption('cwd')) {
             chdir(realpath($cwd));
         }
 
+        // Autoloader
         $autoload = $input->getOption('autoload');
         if (file_exists($autoload) === false) {
             throw new SubwayException('Autoload file not found');
         }
-
         require_once $autoload;
+
+        // Logger
+        $this->logger = new Logger('subway');
+        $this->logger->pushProcessor(new MemoryPeakUsageProcessor());
+        $this->logger->pushHandler(new RotatingFileHandler($input->getOption('log'), 0, $this->guessLoggerLevel($output)));
+
+        // Factory
+        $this->factory = new Factory($this->redis);
+        $this->factory->setLogger($this->logger);
+
+        // Register worker
+        $this->id = gethostname() . ':'.getmypid() . ':' . implode(',', $input->getArgument('queues') ?: array('*'));
+        $this->factory->registerWorker($this->id);
+        $this->logger->addInfo("Worker $this->id is ready");
     }
 
     /**
@@ -77,23 +92,44 @@ class WorkerCommand extends RedisAwareCommand
     {
         $output->writeln($this->getWelcome());
 
-        $factory  = new Factory($this->redis);
         $children = new ArrayCollection();
+        $this->installSignalHandlers($children);
 
-        $logger = new Logger('subway');
-        $logger->pushProcessor(new MemoryPeakUsageProcessor());
-        $logger->pushHandler(new RotatingFileHandler($input->getOption('log'), 0, $this->guessLoggerLevel($output)));
-        $factory->setLogger($logger);
+        $loop = $this->createLoop($input, $output);
+        $loop->addPeriodicTimer($input->getOption('interval'), $this->queueTimer($input, $output, $children));
+        $loop->addPeriodicTimer($input->getOption('interval'), $this->delayedTimer($input, $output));
+        $loop->addPeriodicTimer($input->getOption('interval'), $this->repeatingTimer($input, $output));
 
-        $id = gethostname() . ':'.getmypid() . ':' . implode(',', $input->getArgument('queues') ?: array('*'));
-        $factory->registerWorker($id);
-        $logger->addInfo("Worker $id is ready");
+        if ( (bool)$input->getOption('detect-leaks') ) {
+            $loop->addPeriodicTimer($input->getOption('interval'), $this->leakTimer($output));
+        }
 
+        $loop->run();
+    }
+
+    /**
+     * Create loop
+     * 
+     * @return mixed
+     */
+    protected function createLoop()
+    {
         declare(ticks=1);
-        $loop = React::create();
+        
+        return React::create();
+    }
 
-        // Execute timer
-        $loop->addPeriodicTimer($input->getOption('interval'), function () use ($id, $input, $output, $factory, $children) {
+    /**
+     * Queue timer
+     * 
+     * @param  InputInterface  $input
+     * @param  OutputInterface $output
+     * @param  ArrayCollection $children
+     * @return closure
+     */
+    protected function queueTimer(InputInterface $input, OutputInterface $output, ArrayCollection $children)
+    {
+        return function () use ($input, $output, $children) {
             // Clear workers
             foreach ($children as $pid => $worker) {
                 switch (pcntl_waitpid($pid, $status, WNOHANG)) {
@@ -107,9 +143,9 @@ class WorkerCommand extends RedisAwareCommand
             }
 
             try {
-                $queues = $factory->getQueues($input->getArgument('queues'));
+                $queues = $this->factory->getQueues($input->getArgument('queues'));
             } catch (\Exception $e) {
-                $factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+                $this->logger->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                 throw $e;
             }
@@ -117,7 +153,7 @@ class WorkerCommand extends RedisAwareCommand
             foreach ($queues as $queue) {
                 // Check max concurrent limit
                 if ($children->count() >= $input->getOption('concurrent')) {
-                    $factory->getLogger()->addInfo('Max concurrent limit of '.$input->getOption('concurrent').' reached');
+                    $this->logger->addInfo('Max concurrent limit of '.$input->getOption('concurrent').' reached');
                     break;
                 }
 
@@ -125,7 +161,7 @@ class WorkerCommand extends RedisAwareCommand
                 try {
                     $message = $queue->pop();
                 } catch (\Exception $e) {
-                    $factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+                    $this->logger->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                     throw $e;
                 }
@@ -137,7 +173,7 @@ class WorkerCommand extends RedisAwareCommand
                 $pid = pcntl_fork();
                 if ($pid == -1) {
                     // Wtf?
-                    $factory->getLogger()->addError('Could not fork');
+                    $this->logger->addError('Could not fork');
                     throw new SubwayException('Could not fork');
                 } else if ($pid) {
                     // Parent process
@@ -145,14 +181,14 @@ class WorkerCommand extends RedisAwareCommand
                     $output->writeln(sprintf('[%s][%s] Starting job. Pid: %s', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $pid));
                 } else {
                     // Reconnect to redis
-                    $redis = $factory->getRedis();
+                    $redis = $this->factory->getRedis();
                     if ($redis->isConnected()) {
                         $redis->disconnect();
                     }
                     $redis->connect();
 
                     // Child process
-                    $worker = new Worker($id, $factory);
+                    $worker = new Worker($this->id, $this->factory);
                     if ($worker->perform($message)) {
                         $output->writeln(sprintf('<info>[%s][%s] Finised successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), round(memory_get_peak_usage() / 1024 / 1024, 2)));
                     } else {
@@ -162,11 +198,20 @@ class WorkerCommand extends RedisAwareCommand
                     posix_kill(getmypid(), 9);
                 }
             }
-        });
+        };
+    }
 
-        // Delayed timer
-        $loop->addPeriodicTimer($input->getOption('interval'), function () use ($input, $output, $factory) {
-            $delayedQueue = $factory->getDelayedQueue();
+    /**
+     * Delayed timer
+     * 
+     * @param  InputInterface  $input
+     * @param  OutputInterface $output
+     * @return closure
+     */
+    protected function delayedTimer(InputInterface $input, OutputInterface $output)
+    {
+        return function () use ($input, $output) {
+            $delayedQueue = $this->factory->getDelayedQueue();
             if ($delayedQueue->count() < 1) {
                 return;
             }
@@ -174,7 +219,7 @@ class WorkerCommand extends RedisAwareCommand
             try {
                 $message = $delayedQueue->pop();
             } catch (\Exception $e) {
-                $factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+                $this->factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                 throw $e;
             }
@@ -185,21 +230,30 @@ class WorkerCommand extends RedisAwareCommand
                     ->setAt(null)
                     ->setInterval(null)
                 ;
-                $id = $factory->enqueue($message);
+                $id = $this->factory->enqueue($message);
 
-                $factory->getLogger()->addNotice(sprintf('[%s][%s] Delayed job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
+                $this->factory->getLogger()->addNotice(sprintf('[%s][%s] Delayed job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
                 $output->writeln(sprintf('<comment>[%s][%s] Delayed job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $message->getQueue()));
             }
-        });
+        };
+    }
 
-        // Repeating timer
-        $loop->addPeriodicTimer($input->getOption('interval'), function () use ($input, $output, $factory) {
-            $repeatingQueue = $factory->getRepeatingQueue();
+    /**
+     * Repeating timer
+     * 
+     * @param  InputInterface  $input
+     * @param  OutputInterface $output
+     * @return closure
+     */
+    protected function repeatingTimer(InputInterface $input, OutputInterface $output)
+    {
+        return function () use ($input, $output) {
+            $repeatingQueue = $this->factory->getRepeatingQueue();
             // Pop queue
             try {
                 $message = $repeatingQueue->pop();
             } catch (\Exception $e) {
-                $factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+                $this->factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                 throw $e;
             }
@@ -209,66 +263,81 @@ class WorkerCommand extends RedisAwareCommand
                     ->setAt(null)
                     ->setInterval(null)
                 ;
-                $id = $factory->enqueue($message);
+                $id = $this->factory->enqueue($message);
 
-                $factory->getLogger()->addNotice(sprintf('[%s][%s] Repeating job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
+                $this->factory->getLogger()->addNotice(sprintf('[%s][%s] Repeating job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
                 $output->writeln(sprintf('<comment>[%s][%s] Repeating job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $message->getQueue()));
             }
-        });
+        };
+    }
 
-        // Detect leaks
-        if ( (bool)$input->getOption('detect-leaks') ) {
-            $lastPeakUsage = 0;
-            $lastUsage = 0;
-            $memInfo = function($peak) use (&$lastPeakUsage, &$lastUsage) {
-                $lastUsage                 = ($peak) ? $lastPeakUsage : $lastUsage;
-                $info                      = array();
-                $info['amount']            = ($peak) ? memory_get_peak_usage() : memory_get_usage();
-                $info['diff']              = $info['amount'] - $lastUsage;
-                $info['diffPercentage']    = ($lastUsage == 0) ? 0 : abs($info['diff'] / ($lastUsage / 100));
-                $info['statusDescription'] = '=';
-                $info['statusType']        = 'info';
+    /**
+     * Leak timer
+     * 
+     * @param  OutputInterface $output
+     * @return closure
+     */
+    protected function leakTimer(OutputInterface $output)
+    {
+        $lastPeakUsage = 0;
+        $lastUsage = 0;
+        $memInfo = function($peak) use (&$lastPeakUsage, &$lastUsage) {
+            $lastUsage                 = ($peak) ? $lastPeakUsage : $lastUsage;
+            $info                      = array();
+            $info['amount']            = ($peak) ? memory_get_peak_usage() : memory_get_usage();
+            $info['diff']              = $info['amount'] - $lastUsage;
+            $info['diffPercentage']    = ($lastUsage == 0) ? 0 : abs($info['diff'] / ($lastUsage / 100));
+            $info['statusDescription'] = '=';
+            $info['statusType']        = 'info';
 
-                if ($info['diff'] > 0) {
-                    $info['statusDescription'] = '+';
-                    $info['statusType']        = 'error';
-                } else if ($info['diff'] < 0) {
-                    $info['statusDescription'] = '-';
-                    $info['statusType']        = 'comment';
-                }
+            if ($info['diff'] > 0) {
+                $info['statusDescription'] = '+';
+                $info['statusType']        = 'error';
+            } else if ($info['diff'] < 0) {
+                $info['statusDescription'] = '-';
+                $info['statusType']        = 'comment';
+            }
 
-                // Update last usage variables
-                if ($peak) {
-                    $lastPeakUsage = $info['amount'];
-                } else {
-                    $lastUsage     = $info['amount'];
-                }
+            // Update last usage variables
+            if ($peak) {
+                $lastPeakUsage = $info['amount'];
+            } else {
+                $lastUsage     = $info['amount'];
+            }
 
-                return $info;
-            };
-            $loop->addPeriodicTimer(1, function () use ($input, $output, $memInfo) {
-                // Gather memory info
-                $peak = $memInfo(true);
-                $curr = $memInfo(false);
-                
-                $prefix  = sprintf('[%s][meminfo]', date('Y-m-d\TH:i:s'));
-                $peak    = sprintf('Peak: %.02fKB <%s>%s(%.03f) %%</%s>', $peak['amount'] / 1024, $peak['statusType'], $peak['statusDescription'], $peak['diffPercentage'], $peak['statusType']);
-                $current = sprintf('Current: %.02fKB <%s>%s(%.03f) %%</%s>', $curr['amount'] / 1024, $curr['statusType'], $curr['statusDescription'], $curr['diffPercentage'], $curr['statusType']);
-                
-                $output->writeln("<fg=cyan>$prefix $peak $current</fg=cyan>");
+            return $info;
+        };
 
-                // Unset variables to prevent instable memory usage
-                unset($peak);
-                unset($curr);
-            });
-        }
+        return function () use ($output, $memInfo) {
+            // Gather memory info
+            $peak = $memInfo(true);
+            $curr = $memInfo(false);
+            
+            $prefix  = sprintf('[%s][meminfo]', date('Y-m-d\TH:i:s'));
+            $peak    = sprintf('Peak: %.02fKB <%s>%s(%.03f) %%</%s>', $peak['amount'] / 1024, $peak['statusType'], $peak['statusDescription'], $peak['diffPercentage'], $peak['statusType']);
+            $current = sprintf('Current: %.02fKB <%s>%s(%.03f) %%</%s>', $curr['amount'] / 1024, $curr['statusType'], $curr['statusDescription'], $curr['diffPercentage'], $curr['statusType']);
+            
+            $output->writeln("<fg=cyan>$prefix $peak $current</fg=cyan>");
 
-        $signalHandler = function($signo) use ($factory, &$children, $id) {
+            // Unset variables to prevent instable memory usage
+            unset($peak);
+            unset($curr);
+        };
+    }
+
+    /**
+     * Install signal handlers
+     * 
+     * @param ArrayCollection $children
+     */
+    protected function installSignalHandlers(ArrayCollection $children)
+    {
+        $signalHandler = function($signo) use ($children) {
             foreach ($children as $pid => $child) {
                 pcntl_waitpid($pid, $status);
             }
 
-            $factory->unregisterWorker($id);
+            $this->factory->unregisterWorker($this->id);
 
             exit;
         };
@@ -276,8 +345,6 @@ class WorkerCommand extends RedisAwareCommand
         pcntl_signal(SIGTERM, $signalHandler);
         pcntl_signal(SIGHUP,  $signalHandler);
         pcntl_signal(SIGUSR1, $signalHandler);
-
-        $loop->run();
     }
 
     /**
