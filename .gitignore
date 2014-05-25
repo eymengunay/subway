@@ -1,0 +1,18 @@
+# logs
+subway.log
+
+# source
+src
+
+# build
+downloads
+subway.phar
+
+# phpunit
+report
+report.txt
+
+# composer
+vendor/*
+composer.phar
+composer.lock
