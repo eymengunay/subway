@@ -11,6 +11,7 @@
 
 namespace Subway\Tests;
 
+use Subway\Message;
 use Subway\Test\TestCase;
 use Predis\Client;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -39,7 +40,8 @@ class FactoryTest extends TestCase
      */
     public function testEnqueue()
     {
-        $id = $this->factory->enqueue('default', 'Acme\Job\Class', array('hello' => 'world'));
+        $message = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $id = $this->factory->enqueue($message);
 
         $this->assertTrue((bool) $id);
     }

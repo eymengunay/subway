@@ -11,6 +11,7 @@
 
 namespace Subway\Tests;
 
+use Subway\Message;
 use Subway\Test\TestCase;
 
 /**
@@ -25,10 +26,8 @@ class QueueTest extends TestCase
     {
         $queue  = $this->factory->getQueue('default');
         $count1 = $queue->count();
-        $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array('hello' => 'world')
-        ));
+        $message = new Message($queue->getName(), 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $queue->put($message);
         $count2 = $queue->count();
 
         $this->assertNotEquals($count1, $count2);
@@ -69,50 +68,11 @@ class QueueTest extends TestCase
     public function testQueuePut()
     {
         $queue = $this->factory->getQueue('default');
-        $id    = $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
-        $id    = $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
-        $id    = $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
-        $id    = $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
-        $id    = $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
-        $id    = $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
-        $id    = $queue->put(array(
-            'class' => 'Acme\Job\Class', 
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
+        $message = new Message($queue->getName(), 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
 
-        $this->assertTrue((bool) $id);
+        $queue->put($message);
+
+        $this->assertTrue((bool) $message->getId());
     }
 
     /**
@@ -137,18 +97,9 @@ class QueueTest extends TestCase
     public function testQueuePop()
     {
         $queue = $this->factory->getQueue('default');
-        $job   = $queue->pop();
+        $message = $queue->pop();
 
-        // Unset unique job id for assertion
-        unset($job['id']);
-
-        $this->assertEquals($job, array(
-            'class' => 'Acme\Job\Class',
-            'args'  => array(
-                'hello' => 'world'
-            )
-        ));
-
-        $queue->pop();
+        $this->assertEquals('Subway\Tests\Job\Md5Job', $message->getClass());
+        $this->assertEquals(array('hello' => 'world'), $message->getArgs()->toArray());
     }
 }
