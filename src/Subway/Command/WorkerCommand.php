@@ -12,6 +12,7 @@
 namespace Subway\Command;
 
 use Subway\Factory;
+use Subway\Queue;
 use Subway\Worker;
 use Subway\Exception\SubwayException;
 use React\EventLoop\Factory as React;
