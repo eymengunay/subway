@@ -11,7 +11,6 @@
 
 namespace Subway\Queue;
 
-use Subway\Message;
 use Predis\Client;
 
 /**
@@ -50,7 +49,7 @@ class RepeatingQueue extends DelayedQueue
      * Get next date
      * 
      * @param  string   $intervalSpec
-     * @return DateTime
+     * @return null|\DateTime
      */
     private function getNextDate($intervalSpec)
     {

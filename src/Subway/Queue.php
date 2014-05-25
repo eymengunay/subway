@@ -98,7 +98,7 @@ class Queue
     /**
      * Pop message
      *
-     * @return array
+     * @return null|Message
      */
     public function pop()
     {

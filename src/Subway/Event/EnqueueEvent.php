@@ -37,7 +37,7 @@ class EnqueueEvent extends Event
     /**
      * Get message
      * 
-     * @return string
+     * @return Message
      */
     public function getMessage()
     {

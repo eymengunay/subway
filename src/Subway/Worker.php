@@ -85,7 +85,7 @@ class Worker
     /**
      * Exception handler
      * 
-     * @param  Exception $e
+     * @param  \Exception $e
      * @param  Message   $message
      */
     protected function exceptionHandler(\Exception $e, Message $message)
