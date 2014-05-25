@@ -65,6 +65,19 @@ tools:
                 - 'bin/*'
                 - 'library/*'
             paths: {  }
+    php_code_coverage:
+        enabled: true
+        test_command: phpunit
+        config_path: null
+        only_changesets: false
+        filter:
+            excluded_paths:
+                - 'vendor/*'
+                - 'tests/*'
+                - 'app/*'
+                - 'bin/*'
+                - 'library/*'
+            paths: {  }
 before_commands: {  }
 after_commands: {  }
 artifacts: {  }
