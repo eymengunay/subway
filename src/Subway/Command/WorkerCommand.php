@@ -16,7 +16,8 @@ use Subway\Worker;
 use Subway\Exception\SubwayException;
 use React\EventLoop\Factory as React;
 use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Processor\MemoryPeakUsageProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -80,7 +81,8 @@ class WorkerCommand extends RedisAwareCommand
         $children = new ArrayCollection();
 
         $logger = new Logger('subway');
-        $logger->pushHandler(new StreamHandler($input->getOption('log'), $this->guessLoggerLevel($output)));
+        $logger->pushProcessor(new MemoryPeakUsageProcessor());
+        $logger->pushHandler(new RotatingFileHandler($input->getOption('log'), 0, $this->guessLoggerLevel($output)));
         $factory->setLogger($logger);
 
         $id = gethostname() . ':'.getmypid() . ':' . implode(',', $input->getArgument('queues') ?: array('*'));
