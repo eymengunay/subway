@@ -14,6 +14,8 @@ namespace Subway;
 use Subway\Events;
 use Subway\Queue;
 use Subway\Job;
+use Subway\Event\EnqueueEvent;
+use Subway\Event\EventSubscriber;
 use Subway\Queue\DelayedQueue;
 use Subway\Queue\RepeatingQueue;
 use Predis\Client;
@@ -184,6 +186,8 @@ class Factory
         $queue->put($message);
         $this->updateStatus($message->getId(), Job::STATUS_WAITING);
 
+        $this->getEventDispatcher()->dispatch(Events::ENQUEUE, new EnqueueEvent($message));
+
         if ($this->logger) {
             $this->logger->addNotice(sprintf('Job %s enqueued in %s', $message->getId(), $queue->getName()), array(
                 'class' => $message->getClass(),
@@ -204,7 +208,7 @@ class Factory
     public function enqueueOnce(Message $message)
     {
         $lonerKey = sprintf('resque:loners:queue:%s:job:%s', $message->getQueue(), $message->getHash());
-        
+
         if ($this->redis->has($lonerKey)) {
             $this->logger->addNotice(sprintf('Job with hash %s already exists', $message->getHash()), array(
                 'class' => $message->getClass(),

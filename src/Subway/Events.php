@@ -17,13 +17,13 @@ namespace Subway;
 final class Events
 {
     /**
-     * The on.failure event is thrown on
-     * job failure.
+     * The enqueue event is thrown on
+     * each time a new job is enqueued.
      *
      * The event listener receives an
-     * Subway\Event\MessageEvent instance.
+     * Subway\Event\EnqueueEvent instance.
      *
      * @var string
      */
-    const ON_FAILURE = 'on.failure';
+    const ENQUEUE = 'enqueue';
 }
