@@ -156,6 +156,19 @@ class Message implements \JsonSerializable
     }
 
     /**
+     * Set args
+     *
+     * @param  array $args
+     * @return self
+     */
+    public function setArgs(array $args = array())
+    {
+        $this->args = $args;
+
+        return $this;
+    }
+
+    /**
      * Get args
      * 
      * @return array
