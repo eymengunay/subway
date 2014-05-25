@@ -93,7 +93,7 @@ class WorkerCommand extends RedisAwareCommand
         $loop = React::create();
 
         // Execute timer
-        $timer = $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($id, $input, $output, $factory, $children) {
+        $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($id, $input, $output, $factory, $children) {
             // Clear workers
             foreach ($children as $pid => $worker) {
                 switch (pcntl_waitpid($pid, $status, WNOHANG)) {
@@ -165,7 +165,7 @@ class WorkerCommand extends RedisAwareCommand
         });
 
         // Delayed timer
-        $timer = $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($input, $output, $factory) {
+        $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($input, $output, $factory) {
             $delayedQueue = $factory->getDelayedQueue();
             if ($delayedQueue->count() < 1) {
                 return;
@@ -193,7 +193,7 @@ class WorkerCommand extends RedisAwareCommand
         });
 
         // Repeating timer
-        $timer = $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($input, $output, $factory) {
+        $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($input, $output, $factory) {
             $repeatingQueue = $factory->getRepeatingQueue();
             // Pop queue
             try {
