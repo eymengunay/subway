@@ -12,19 +12,22 @@
 namespace Subway\Tests\Job;
 
 use Subway\Job;
+use Subway\Message;
 
 /**
- * Md5 job
+ * Md5 job test
  */
-class Md5Job extends Job
+class Md5JobTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * {@inheritdoc}
      */
-    public function perform()
+    public function testPerform()
     {
-        for ($i = 0; $i < 200000; $i++) {
-            md5($i);
-        }
+        $message = new Message('defult', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+
+        $job = new Md5Job();
+        $job->setMessage($message);
+        $job->perform();
     }
 }
