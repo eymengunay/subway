@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/eymengunay/subway.svg)](https://travis-ci.org/eymengunay/subway)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/eymengunay/subway/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/eymengunay/subway/?branch=master)
-[![Coverage Status](https://img.shields.io/coveralls/eymengunay/subway.svg)](https://coveralls.io/r/eymengunay/subway)
+[![Code Coverage](https://scrutinizer-ci.com/g/eymengunay/subway/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/eymengunay/subway/?branch=master)
 [![Total Downloads](https://poser.pugx.org/eo/subway/downloads.png)](https://packagist.org/packages/eo/subway)
 [![Latest Stable Version](https://poser.pugx.org/eo/subway/v/stable.png)](https://packagist.org/packages/eo/subway)
 
@@ -40,6 +40,8 @@ Composer will install everything into your project's vendor directory.
 
 ### Creating job classes
 
+To create a new job, extend your job class to `Subway\Job` and implement abstract method `perform`.
+
 ```
 <?php
 
@@ -47,7 +49,7 @@ use Subway\Job;
 
 class MyAwesomeJob extends Job
 {
-    public function perform($args)
+    public function perform()
     {
         // do something here
     }
@@ -71,6 +73,8 @@ $id = $this->factory->enqueue($message);
 
 echo "Job $id enqueued!";
 ```
+
+If you need to enqueue Message only once use `enqueueOnce` method.
 
 ### Executing jobs
 
