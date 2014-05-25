@@ -55,9 +55,24 @@ class RepeatingQueueTest extends TestCase
     }
 
     /**
+     * Test queue get jobs
+     *
+     * @depends testQueueCount
+     */
+    public function testQueueGetJob()
+    {
+        $queue = $this->factory->getRepeatingQueue();
+        $messages = $queue->getJobs();
+        $message = current($messages);
+
+        $this->assertEquals('array', gettype($messages));
+        $this->assertEquals('default', $message->getQueue());
+    }
+
+    /**
      * Test queue pop
      *
-     * @depends testQueuePut
+     * @depends testQueueGetJob
      */
     public function testQueuePop()
     {
