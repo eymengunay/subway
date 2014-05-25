@@ -15,7 +15,7 @@ Background job processing for PHP with resque compatible db structure.
 
 ## Requirements
 * A POSIX-oriented operating system (No windows support due to pcntl dependency)
-* [PHP](http://php.net) >= 5.3 (with [pcntl](http://php.net/manual/en/book.pcntl.php))
+* [PHP](http://php.net) >= 5.4 (with [pcntl](http://php.net/manual/en/book.pcntl.php))
 * [Redis](http://redis.io)
 
 ## Installation
