@@ -112,8 +112,8 @@ class WorkerCommand extends RedisAwareCommand
 
         $loop = $this->createLoop($input, $output);
         $loop->addPeriodicTimer($input->getOption('interval'), $this->queueTimer($input, $output, $children));
-        $loop->addPeriodicTimer($input->getOption('interval'), $this->delayedTimer($input, $output));
-        $loop->addPeriodicTimer($input->getOption('interval'), $this->repeatingTimer($input, $output));
+        $loop->addPeriodicTimer($input->getOption('interval'), $this->delayedTimer($output));
+        $loop->addPeriodicTimer($input->getOption('interval'), $this->repeatingTimer($output));
 
         if ( (bool)$input->getOption('detect-leaks') ) {
             $loop->addPeriodicTimer($input->getOption('interval'), $this->leakTimer($output));
@@ -219,71 +219,63 @@ class WorkerCommand extends RedisAwareCommand
     /**
      * Delayed timer
      * 
-     * @param  InputInterface  $input
      * @param  OutputInterface $output
      * @return closure
      */
-    protected function delayedTimer(InputInterface $input, OutputInterface $output)
+    protected function delayedTimer(OutputInterface $output)
     {
-        return function () use ($input, $output) {
+        return function () use ($output) {
             $delayedQueue = $this->factory->getDelayedQueue();
-            if ($delayedQueue->count() < 1) {
-                return;
-            }
-            // Pop queue
-            try {
-                $message = $delayedQueue->pop();
-            } catch (\Exception $e) {
-                $this->factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
-
-                throw $e;
-            }
-
-            if ($message) {
-                // Remove at & interval
-                $message
-                    ->setAt(null)
-                    ->setInterval(null)
-                ;
-                $id = $this->factory->enqueue($message);
-
-                $this->factory->getLogger()->addNotice(sprintf('[%s][%s] Delayed job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
-                $output->writeln(sprintf('<comment>[%s][%s] Delayed job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $message->getQueue()));
-            }
+            $this->handleScheduled($output, $delayedQueue);
         };
     }
 
     /**
      * Repeating timer
      * 
-     * @param  InputInterface  $input
      * @param  OutputInterface $output
      * @return closure
      */
-    protected function repeatingTimer(InputInterface $input, OutputInterface $output)
+    protected function repeatingTimer(OutputInterface $output)
     {
-        return function () use ($input, $output) {
+        return function () use ($output) {
             $repeatingQueue = $this->factory->getRepeatingQueue();
-            // Pop queue
-            try {
-                $message = $repeatingQueue->pop();
-            } catch (\Exception $e) {
-                $this->factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
-
-                throw $e;
-            }
-            if ($message) {
-                // Remove at & interval
-                $message
-                    ->setAt(null)
-                    ->setInterval(null)
-                ;
-                $id = $this->factory->enqueue($message);
-
-                $this->factory->getLogger()->addNotice(sprintf('[%s][%s] Repeating job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
-                $output->writeln(sprintf('<comment>[%s][%s] Repeating job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $message->getQueue()));
-            }
+            $this->handleScheduled($output, $repeatingQueue);
         };
+    }
+
+    /**
+     * Handle scheduled
+     * 
+     * @param OutputInterface $output
+     * @param Queue           $queue
+     */
+    protected function handleScheduled(OutputInterface $output, Queue $queue)
+    {
+        if ($queue->count() < 1) {
+            return;
+        }
+        // Pop queue
+        try {
+            $message = $queue->pop();
+        } catch (\Exception $e) {
+            $this->factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+
+            throw $e;
+        }
+
+        if ($message) {
+            // Remove at & interval
+            $message
+                ->setAt(null)
+                ->setInterval(null)
+            ;
+            $id = $this->factory->enqueue($message);
+
+            $name = ucfirst($queue->getName());
+            $this->factory->getLogger()->addNotice(sprintf('[%s][%s] %s job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $name, $message->getQueue()));
+            $output->writeln(sprintf('<comment>[%s][%s] %s job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $name, $message->getQueue()));
+        }
     }
 
     /**
