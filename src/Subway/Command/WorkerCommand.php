@@ -221,29 +221,26 @@ class WorkerCommand extends RedisAwareCommand
             $lastPeakUsage = 0;
             $lastUsage = 0;
             $memInfo = function($peak) use (&$lastPeakUsage, &$lastUsage) {
-                $lastUsage = ($peak) ? $lastPeakUsage : $lastUsage;
-                $info['amount'] = ($peak) ? memory_get_peak_usage() : memory_get_usage();
-                $info['diff'] = $info['amount'] - $lastUsage;
-                $info['diffPercentage'] = ($lastUsage == 0) ? 0 : $info['diff'] / ($lastUsage / 100);
-                $info['statusDescription'] = 'stable';
-                $info['statusType'] = 'info';
+                $lastUsage                 = ($peak) ? $lastPeakUsage : $lastUsage;
+                $info['amount']            = ($peak) ? memory_get_peak_usage() : memory_get_usage();
+                $info['diff']              = $info['amount'] - $lastUsage;
+                $info['diffPercentage']    = ($lastUsage == 0) ? 0 : abs($info['diff'] / ($lastUsage / 100));
+                $info['statusDescription'] = '=';
+                $info['statusType']        = 'info';
 
-                if ($info['diff'] > 0)
-                {
-                    $info['statusDescription'] = 'increasing';
-                    $info['statusType'] = 'error';
-                }
-                else if ($info['diff'] < 0)
-                {
-                    $info['statusDescription'] = 'decreasing';
-                    $info['statusType'] = 'comment';
+                if ($info['diff'] > 0) {
+                    $info['statusDescription'] = '+';
+                    $info['statusType']        = 'error';
+                } else if ($info['diff'] < 0) {
+                    $info['statusDescription'] = '-';
+                    $info['statusType']        = 'comment';
                 }
 
                 // Update last usage variables
                 if ($peak) {
                     $lastPeakUsage = $info['amount'];
                 } else {
-                    $lastUsage = $info['amount'];
+                    $lastUsage     = $info['amount'];
                 }
 
                 return $info;
@@ -252,13 +249,12 @@ class WorkerCommand extends RedisAwareCommand
                 // Gather memory info
                 $peak = $memInfo(true);
                 $curr = $memInfo(false);
-
-                // Print report
-                $output->writeln('');
-                $output->writeln('== MEMORY USAGE ==');
-                $output->writeln(sprintf('Peak: %.02f KByte <%s>%s (%.03f %%)</%s>', $peak['amount'] / 1024, $peak['statusType'], $peak['statusDescription'], $peak['diffPercentage'], $peak['statusType']));
-                $output->writeln(sprintf('Cur.: %.02f KByte <%s>%s (%.03f %%)</%s>', $curr['amount'] / 1024, $curr['statusType'], $curr['statusDescription'], $curr['diffPercentage'], $curr['statusType']));
-                $output->writeln('');
+                
+                $prefix  = sprintf('[%s][meminfo]', date('Y-m-d\TH:i:s'));
+                $peak    = sprintf('Peak: %.02fKB <%s>%s(%.03f) %%</%s>', $peak['amount'] / 1024, $peak['statusType'], $peak['statusDescription'], $peak['diffPercentage'], $peak['statusType']);
+                $current = sprintf('Current: %.02fKB <%s>%s(%.03f) %%</%s>', $curr['amount'] / 1024, $curr['statusType'], $curr['statusDescription'], $curr['diffPercentage'], $curr['statusType']);
+                
+                $output->writeln("<fg=cyan>$prefix $peak $current</fg=cyan>");
 
                 // Unset variables to prevent instable memory usage
                 unset($peak);
