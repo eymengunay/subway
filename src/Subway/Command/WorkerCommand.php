@@ -93,7 +93,7 @@ class WorkerCommand extends RedisAwareCommand
         $loop = React::create();
 
         // Execute timer
-        $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($id, $input, $output, $factory, $children) {
+        $loop->addPeriodicTimer($input->getOption('interval'), function () use ($id, $input, $output, $factory, $children) {
             // Clear workers
             foreach ($children as $pid => $worker) {
                 switch (pcntl_waitpid($pid, $status, WNOHANG)) {
@@ -165,7 +165,7 @@ class WorkerCommand extends RedisAwareCommand
         });
 
         // Delayed timer
-        $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($input, $output, $factory) {
+        $loop->addPeriodicTimer($input->getOption('interval'), function () use ($input, $output, $factory) {
             $delayedQueue = $factory->getDelayedQueue();
             if ($delayedQueue->count() < 1) {
                 return;
@@ -193,7 +193,7 @@ class WorkerCommand extends RedisAwareCommand
         });
 
         // Repeating timer
-        $loop->addPeriodicTimer($input->getOption('interval'), function ($timer) use ($input, $output, $factory) {
+        $loop->addPeriodicTimer($input->getOption('interval'), function () use ($input, $output, $factory) {
             $repeatingQueue = $factory->getRepeatingQueue();
             // Pop queue
             try {
@@ -222,6 +222,7 @@ class WorkerCommand extends RedisAwareCommand
             $lastUsage = 0;
             $memInfo = function($peak) use (&$lastPeakUsage, &$lastUsage) {
                 $lastUsage                 = ($peak) ? $lastPeakUsage : $lastUsage;
+                $info                      = array();
                 $info['amount']            = ($peak) ? memory_get_peak_usage() : memory_get_usage();
                 $info['diff']              = $info['amount'] - $lastUsage;
                 $info['diffPercentage']    = ($lastUsage == 0) ? 0 : abs($info['diff'] / ($lastUsage / 100));
@@ -245,7 +246,7 @@ class WorkerCommand extends RedisAwareCommand
 
                 return $info;
             };
-            $timer = $loop->addPeriodicTimer(1, function ($timer) use ($input, $output, $memInfo) {
+            $loop->addPeriodicTimer(1, function () use ($input, $output, $memInfo) {
                 // Gather memory info
                 $peak = $memInfo(true);
                 $curr = $memInfo(false);
