@@ -1,6 +1,7 @@
 # Subway
 
 [![Build Status](https://travis-ci.org/eymengunay/subway.svg)](https://travis-ci.org/eymengunay/subway)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/eymengunay/subway/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/eymengunay/subway/?branch=master)
 [![Coverage Status](https://img.shields.io/coveralls/eymengunay/subway.svg)](https://coveralls.io/r/eymengunay/subway)
 [![Total Downloads](https://poser.pugx.org/eo/subway/downloads.png)](https://packagist.org/packages/eo/subway)
 [![Latest Stable Version](https://poser.pugx.org/eo/subway/v/stable.png)](https://packagist.org/packages/eo/subway)
