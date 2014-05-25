@@ -66,9 +66,26 @@ use Subway\Factory;
 $redis  = new Client();
 $subway = new Factory($redis);
 
-// $id contains enqueued unique job id
-$id = $subway->enqueue('queue-name', 'MyAwesomeJob', array('arg1' => 'hello', 'arg2' => 'world'));
+$message = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+$id = $this->factory->enqueue($message);
 
+echo "Job $id enqueued!";
+```
+
+### Executing jobs
+
+To execute jobs you can either use the binary file distributed with this library (see `bin` directory) or download the latest .phar archive from: http://eymengunay.github.io/subway/downloads/subway.phar
+
+Once you have located the binary or downloaded .phar archive start your worker using the following command:
+
+```
+php subway.phar worker
+```
+
+To see all available options and arguments see command help:
+
+```
+php subway.phar worker -h
 ```
 
 ## Reporting an issue or a feature request
