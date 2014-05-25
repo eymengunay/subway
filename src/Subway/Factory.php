@@ -228,7 +228,7 @@ class Factory
      * Guess message queue
      *
      * @param  Message $message
-     * @return string
+     * @return Queue
      */
     protected function guessMessageQueue(Message $message)
     {

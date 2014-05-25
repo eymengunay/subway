@@ -168,7 +168,7 @@ class Message implements \JsonSerializable
     /**
      * Set at
      * 
-     * @param  DateTime $at
+     * @param  \DateTime $at
      * @return self
      */
     public function setAt(\DateTime $at = null)
