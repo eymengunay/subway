@@ -22,6 +22,24 @@ abstract class Job
     const STATUS_COMPLETE = 4;
 
     /**
+     * @var Message
+     */
+    protected $message;
+
+    /**
+     * Set message
+     * 
+     * @param  Message $message
+     * @return self
+     */
+    final public function setMessage(Message $message)
+    {
+        $this->message = $message;
+
+        return $this;
+    }
+
+    /**
      * Perform job
      * 
      * @param array $args 

@@ -42,7 +42,7 @@ class WorkerCommand extends RedisAwareCommand
             ->addOption('autoload', 'a', InputOption::VALUE_REQUIRED, 'Application autoloader', './vendor/autoload.php')
             ->addOption('log', 'l', InputOption::VALUE_REQUIRED, 'Log file', './subway.log')
             ->addOption('interval', 'i', InputOption::VALUE_REQUIRED, 'How often to check for new jobs across the queues', 5)
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Max concurrent fork count', 2)
+            ->addOption('concurrent', 'c', InputOption::VALUE_REQUIRED, 'Max concurrent job count', 2)
             ->addOption('detect-leaks', null, InputOption::VALUE_NONE, 'Output information about memory usage')
 
             ->addArgument('queues', InputArgument::IS_ARRAY, 'Queue names (separate using space)', array())
@@ -116,21 +116,21 @@ class WorkerCommand extends RedisAwareCommand
 
             foreach ($queues as $queue) {
                 // Check max concurrent limit
-                if ($children->count() >= $input->getOption('count')) {
-                    $factory->getLogger()->addInfo('Max concurrent limit of '.$input->getOption('count').' reached');
+                if ($children->count() >= $input->getOption('concurrent')) {
+                    $factory->getLogger()->addInfo('Max concurrent limit of '.$input->getOption('concurrent').' reached');
                     break;
                 }
 
                 // Pop queue
                 try {
-                    $job = $queue->pop();
+                    $message = $queue->pop();
                 } catch (\Exception $e) {
                     $factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                     throw $e;
                 }
 
-                if (!$job) {
+                if (!$message) {
                     continue;
                 }
 
@@ -142,7 +142,7 @@ class WorkerCommand extends RedisAwareCommand
                 } else if ($pid) {
                     // Parent process
                     $children->set($pid, time());
-                    $output->writeln(sprintf('[%s][%s] Starting job. Pid: %s', date('Y-m-d\TH:i:s'), substr($job['id'], 0, 7), $pid));
+                    $output->writeln(sprintf('[%s][%s] Starting job. Pid: %s', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $pid));
                 } else {
                     // Reconnect to redis
                     $redis = $factory->getRedis();
@@ -153,10 +153,10 @@ class WorkerCommand extends RedisAwareCommand
 
                     // Child process
                     $worker = new Worker($id, $factory);
-                    if ($worker->perform($job)) {
-                        $output->writeln(sprintf('<info>[%s][%s] Finised successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($job['id'], 0, 7), round(memory_get_peak_usage() / 1024 / 1024, 2)));
+                    if ($worker->perform($message)) {
+                        $output->writeln(sprintf('<info>[%s][%s] Finised successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), round(memory_get_peak_usage() / 1024 / 1024, 2)));
                     } else {
-                        $output->writeln(sprintf('<error>[%s][%s] Job execution failed.</error>', date('Y-m-d\TH:i:s'), substr($job['id'], 0, 7)));
+                        $output->writeln(sprintf('<error>[%s][%s] Job execution failed.</error>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7)));
                     }
 
                     posix_kill(getmypid(), 9);
@@ -172,17 +172,23 @@ class WorkerCommand extends RedisAwareCommand
             }
             // Pop queue
             try {
-                $delayedJob = $delayedQueue->pop();
+                $message = $delayedQueue->pop();
             } catch (\Exception $e) {
                 $factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                 throw $e;
             }
-            if ($delayedJob) {
-                $id = $factory->enqueue($delayedJob['queue'], $delayedJob['class'], $delayedJob['args']);
 
-                $factory->getLogger()->addNotice(sprintf('[%s][%s] Delayed job enqueued in %s.', date('Y-m-d\TH:i:s'), $job['id'], $delayedJob['queue']));
-                $output->writeln(sprintf('<comment>[%s][%s] Delayed job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $delayedJob['queue']));
+            if ($message) {
+                // Remove at & interval
+                $message
+                    ->setAt(null)
+                    ->setInterval(null)
+                ;
+                $id = $factory->enqueue($message);
+
+                $factory->getLogger()->addNotice(sprintf('[%s][%s] Delayed job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
+                $output->writeln(sprintf('<comment>[%s][%s] Delayed job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $message->getQueue()));
             }
         });
 
@@ -191,17 +197,22 @@ class WorkerCommand extends RedisAwareCommand
             $repeatingQueue = $factory->getRepeatingQueue();
             // Pop queue
             try {
-                $repeatingJob = $repeatingQueue->pop();
+                $message = $repeatingQueue->pop();
             } catch (\Exception $e) {
                 $factory->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                 throw $e;
             }
-            if ($repeatingJob) {
-                $id = $factory->enqueue($repeatingJob['queue'], $repeatingJob['class'], $repeatingJob['args']);
+            if ($message) {
+                // Remove at & interval
+                $message
+                    ->setAt(null)
+                    ->setInterval(null)
+                ;
+                $id = $factory->enqueue($message);
 
-                $factory->getLogger()->addNotice(sprintf('[%s][%s] Repeating job enqueued in %s.', date('Y-m-d\TH:i:s'), $job['id'], $repeatingJob['queue']));
-                $output->writeln(sprintf('<comment>[%s][%s] Repeating job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $repeatingJob['queue']));
+                $factory->getLogger()->addNotice(sprintf('[%s][%s] Repeating job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $message->getQueue()));
+                $output->writeln(sprintf('<comment>[%s][%s] Repeating job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $message->getQueue()));
             }
         });
 

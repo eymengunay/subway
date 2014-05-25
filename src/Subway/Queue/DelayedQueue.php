@@ -11,8 +11,9 @@
 
 namespace Subway\Queue;
 
-use Predis\Client;
 use Subway\Queue;
+use Subway\Message;
+use Predis\Client;
 
 /**
  * Delayed queue class
@@ -74,7 +75,7 @@ class DelayedQueue extends Queue
         foreach ($timestamps as $timestamp) {
             $items = $this->redis->lrange(sprintf('resque:queue:%s', $this->getName()), 0, -1) ?: array();
             foreach ($items as $item) {
-                $jobs[] = json_decode($item, true);
+                $jobs[] = Message::jsonUnserialize($item);
             }
         }
 
@@ -94,26 +95,21 @@ class DelayedQueue extends Queue
         $key = sprintf('resque:%s:%s', $this->getName(), $timestamps[0]);
         $item = $this->redis->lpop($key);
 
-        if ($this->redis->llen($key) == 0) {
+        if (is_null($item) || $this->redis->llen($key) == 0) {
             $this->redis->del($key);
             $this->redis->zrem(sprintf('resque:%s_queue_schedule', $this->getName()), $timestamps[0]);
         }
 
-        return json_decode($item, true);
+        return $item ? Message::jsonUnserialize($item) : null;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function put(array $data)
+    public function put(Message $message)
     {
-        $at = $data['at']->format('U');
-        if (array_key_exists('id', $data) === false) {
-            $data['id'] = $this->generateJobId($data);
-        }
-        $this->redis->rpush(sprintf('resque:%s:%s', $this->getName(), $at), json_encode($data));
+        $at = $message->getAt()->format('U');
+        $this->redis->rpush(sprintf('resque:%s:%s', $this->getName(), $at), json_encode($message));
         $this->redis->zadd(sprintf('resque:%s_queue_schedule', $this->getName()), $at, $at);
-
-        return $data['id'];
     }
 }

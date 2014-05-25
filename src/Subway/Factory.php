@@ -18,6 +18,7 @@ use Subway\Queue\DelayedQueue;
 use Subway\Queue\RepeatingQueue;
 use Predis\Client;
 use Psr\Log\LoggerInterface;
+use Monolog\Processor\MemoryPeakUsageProcessor;
 use Monolog\Logger;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -49,8 +50,20 @@ class Factory
      */
     public function __construct(Client $redis)
     {
-        $this->redis      = $redis;
+        $this->initialize($redis);
+    }
+
+    /**
+     * Initialize factory
+     *
+     * @param Client $redis
+     */
+    protected function initialize(Client $redis)
+    {
+        $this->redis = $redis;
         $this->dispatcher = new EventDispatcher();
+        $this->logger = new Logger('subway');
+        $this->logger->pushProcessor(new MemoryPeakUsageProcessor());
     }
 
     /**
@@ -118,9 +131,19 @@ class Factory
     }
 
     /**
+     * Get registered workers
+     * 
+     * @return array
+     */
+    public function getWorkers()
+    {
+        return $this->redis->smembers('resque:workers');
+    }
+
+    /**
      * Register worker
      *
-     * @param string $id
+     * @param string $id Worker id
      */
     public function registerWorker($id)
     {
@@ -131,7 +154,7 @@ class Factory
     /**
      * Unregister worker
      *
-     * @param string $id
+     * @param string $id Worker id
      */
     public function unregisterWorker($id)
     {
@@ -147,86 +170,71 @@ class Factory
      * Push a job to the end of a specific queue. 
      * If the queue does not exist, then create it as well.
      * 
-     * @param  string $queue
-     * @param  string $class
-     * @param  array  $args
-     * @return string Enqueued job id
+     * @param  Message $message
+     * @return string  Enqueued job id
      */
-    public function enqueue($queue, $class, $args = array())
+    public function enqueue(Message $message)
     {
-        $id = $this->getQueue($queue)->put(array(
-            'queue' => $queue,
-            'class' => $class,
-            'args'  => $args
-        ));
-        $this->updateStatus($id, Job::STATUS_WAITING);
+        $queue = $this->guessMessageQueue($message);
+        $queue->put($message);
+        $this->updateStatus($message->getId(), Job::STATUS_WAITING);
 
         if ($this->logger) {
-            $this->logger->addNotice("Job $id enqueued in $queue", array(
-                'class' => $class,
-                'args'  => $args
+            $this->logger->addNotice(sprintf('Job %s enqueued in %s', $message->getId(), $queue->getName()), array(
+                'class' => $message->getClass(),
+                'args'  => $message->getArgs()
             ));
         }
+
+        return $message->getId();
+    }
+
+    /**
+     * Push a job to the end of a specific queue. 
+     * If the queue does not exist, then create it as well.
+     * 
+     * @param  Message $message
+     * @return string  Enqueued job id
+     */
+    public function enqueueOnce(Message $message)
+    {
+        $lonerKey = sprintf('resque:loners:queue:%s:job:%s', $message->getQueue(), $message->getHash());
+        
+        if ($this->redis->has($lonerKey)) {
+            $this->logger->addNotice(sprintf('Job with hash %s already exists', $message->getHash()), array(
+                'class' => $message->getClass(),
+                'args'  => $message->getArgs()
+            ));
+
+            return $this->redis->get($lonerKey);
+        }
+
+        $id = $this->enqueue($message);
+        $this->redis->set($lonerKey, $id);
 
         return $id;
     }
 
     /**
-     * Push a job to the end of delayed queue. 
-     * If the queue does not exist, then create it as well.
+     * Guess message queue
      *
-     * @param  DateTime $at
-     * @param  string   $queue
-     * @param  string   $class
-     * @param  array    $args
-     * @return string   Enqueued job id
+     * @param  Message $message
+     * @return string
      */
-    public function enqueueDelayed(\DateTime $at, $queue, $class, $args = array())
+    protected function guessMessageQueue(Message $message)
     {
-        $id = $this->getDelayedQueue()->put(array(
-            'at'    => $at,
-            'queue' => $queue,
-            'class' => $class,
-            'args'  => $args
-        ));
-
-        if ($this->logger) {
-            $datestr = $at->format('Y-m-d\TH:i:s');
-            $this->logger->addNotice("Delayed job $datestr $id enqueued in $queue", array(
-                'class' => $class,
-                'args'  => $args
-            ));
+        if ($message->getAt() && $message->getInterval()) {
+            // Repeating
+            $queue = $this->getRepeatingQueue();
+        } elseif ($message->getAt()) {
+            // Delayed
+            $queue = $this->getDelayedQueue();
+        } else {
+            // Good old fashion job
+            $queue = $this->getQueue($message->getQueue());
         }
 
-        return $id;
-    }
-
-    /**
-     * Push a job to the end of repeating queue. 
-     * If the queue does not exist, then create it as well.
-     *
-     * @param  string $queue
-     * @param  string $class
-     * @param  array  $args
-     * @return string Enqueued job id
-     */
-    public function enqueueRepeating($intervalSpec, $queue, $class, $args = array())
-    {
-        $id = $this->getRepeatingQueue()->put(array(
-            'interval' => $intervalSpec,
-            'queue'    => $queue,
-            'class'    => $class,
-            'args'     => $args
-        ));
-
-        if ($this->logger) {
-            $this->logger->addNotice("Repeating job $intervalSpec $id enqueued in $queue", array(
-                'class' => $class,
-                'args'  => $args
-            ));
-        }
-
-        return $id;
+        return $queue;
     }
 
     /**
@@ -238,9 +246,17 @@ class Factory
     public function updateStatus($id, $status)
     {
         $this->redis->set("resque:job:$id:status", json_encode(array(
-            'status' => $status,
+            'status'  => $status,
             'updated' => time(),
         )));
+
+        // Set an expiration for completed jobs
+        switch ($status) {
+            case Job::STATUS_COMPLETE:
+                // 432000 seconds = 5 Days
+                $this->redis->expire("resque:job:$id:status", 432000);
+                break;
+        }
     }
 
     /**
@@ -268,7 +284,7 @@ class Factory
      * 
      * @param LoggerInterface $logger
      */
-    public function setLogger(LoggerInterface $logger = null)
+    public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
 

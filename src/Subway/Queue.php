@@ -51,17 +51,6 @@ class Queue
     }
 
     /**
-     * Generate job id
-     * 
-     * @param  mixed  $data
-     * @return string
-     */
-    public function generateJobId($data = null)
-    {
-        return sha1(uniqid().serialize($data));
-    }
-
-    /**
      * Clear queue
      */
     public function clear()
@@ -90,7 +79,7 @@ class Queue
         $jobs = $this->redis->lrange(sprintf('resque:queue:%s', $this->getName()), 0, -1) ?: array();
         $data = array();
         foreach ($jobs as $job) {
-            $data[] = json_decode($job, true);
+            $data[] = Message::jsonUnserialize($job);
         }
 
         return $data;
@@ -107,7 +96,7 @@ class Queue
     }
 
     /**
-     * Pop
+     * Pop message
      *
      * @return array
      */
@@ -118,20 +107,16 @@ class Queue
             return;
         }
 
-        return json_decode($item, true);
+        return Message::jsonUnserialize($item);
     }
 
     /**
-     * Put
+     * Put message
      *
-     * @param  array  $data
-     * @return string Unique job identifier
+     * @param Message $message
      */
-    public function put(array $data)
+    public function put(Message $message)
     {
-        $data['id'] = $this->generateJobId($data);
-        $this->redis->rpush(sprintf('resque:queue:%s', $this->getName()), json_encode($data));
-
-        return $data['id'];
+        $this->redis->rpush(sprintf('resque:queue:%s', $this->getName()), json_encode($message));
     }
 }

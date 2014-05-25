@@ -11,6 +11,7 @@
 
 namespace Subway\Queue;
 
+use Subway\Message;
 use Predis\Client;
 
 /**
@@ -33,14 +34,16 @@ class RepeatingQueue extends DelayedQueue
      */
     public function pop()
     {
-        $data = parent::pop();
-        if (is_null($data)) {
+        $message = parent::pop();
+        if (is_null($message)) {
             return;
         }
 
-        $this->put($data);
+        $at = $this->getNextDate($message->getInterval());
+        $message->setAt($at);
+        $this->put($message);
 
-        return $data;
+        return $message;
     }
 
     /**
@@ -55,15 +58,5 @@ class RepeatingQueue extends DelayedQueue
         $array = iterator_to_array($period);
 
         return current($array);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function put(array $data)
-    {
-        $data['at'] = $this->getNextDate($data['interval']);
-
-        return parent::put($data);
     }
 }
