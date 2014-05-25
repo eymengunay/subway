@@ -18,6 +18,7 @@ use Subway\Queue\DelayedQueue;
 use Subway\Queue\RepeatingQueue;
 use Predis\Client;
 use Psr\Log\LoggerInterface;
+use Monolog\Handler\RedisHandler;
 use Monolog\Processor\MemoryPeakUsageProcessor;
 use Monolog\Logger;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -64,6 +65,10 @@ class Factory
         $this->dispatcher = new EventDispatcher();
         $this->logger = new Logger('subway');
         $this->logger->pushProcessor(new MemoryPeakUsageProcessor());
+        $this->logger->pushHandler(new RedisHandler($redis, 'resque:logs', Logger::WARNING));
+
+        $subscriber = new EventSubscriber($this);
+        $this->dispatcher->addSubscriber($subscriber);
     }
 
     /**
