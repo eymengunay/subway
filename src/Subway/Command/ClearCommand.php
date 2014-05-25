@@ -42,10 +42,11 @@ class ClearCommand extends RedisAwareCommand
             $dialog = $this->getHelperSet()->get('dialog');
             if (!$dialog->askConfirmation(
                     $output,
-                    '<question>This action will erase entire subway database. Are you sure you want to continue? (Y/n)</question>',
-                    true
+                    '<question>This action will erase entire subway database. Are you sure you want to continue? (y/N)</question>',
+                    false
                 )) {
-                return;
+                
+                return $output->writeln('<comment>Command aborted by user</comment>');
             }
         }
 
