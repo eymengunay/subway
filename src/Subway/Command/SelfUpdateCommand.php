@@ -26,6 +26,9 @@ class SelfUpdateCommand extends Command
 {
     const MANIFEST_FILE = 'http://eymengunay.github.io/subway/manifest.json';
 
+    /**
+     * {@inheritdoc}
+     */
     protected function configure()
     {
         $this
@@ -36,6 +39,9 @@ class SelfUpdateCommand extends Command
         ;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $output->writeln('Looking for updates...');
