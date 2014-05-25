@@ -30,6 +30,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WorkerCommand extends RedisAwareCommand
 {
     /**
+     * @var string
+     */
+    protected $id;
+
+    /**
+     * @var Factory
+     */
+    protected $factory;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
      * {@inheritdoc}
      */
     protected function configure()

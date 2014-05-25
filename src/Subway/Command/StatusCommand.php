@@ -74,11 +74,9 @@ class StatusCommand extends RedisAwareCommand
     /**
      * Queue status
      * 
-     * @param  InputInterface  $input
-     * @param  OutputInterface $output
      * @return array
      */
-    protected function queueStatus(InputInterface $input, OutputInterface $output)
+    protected function queueStatus()
     {
         $rows = array();
 
@@ -104,11 +102,9 @@ class StatusCommand extends RedisAwareCommand
     /**
      * Worker status
      * 
-     * @param  InputInterface  $input
-     * @param  OutputInterface $output
      * @return array
      */
-    protected function workerStatus(InputInterface $input, OutputInterface $output)
+    protected function workerStatus()
     {
         $rows = array();
 
