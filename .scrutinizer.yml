@@ -78,7 +78,8 @@ tools:
                 - 'bin/*'
                 - 'library/*'
             paths: {  }
-before_commands: {  }
+before_commands:
+    - 'composer install --dev --prefer-source --no-interaction'
 after_commands: {  }
 artifacts: {  }
 build_failure_conditions: {  }
