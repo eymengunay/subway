@@ -1,5 +1,10 @@
 # Subway
 
+[![Build Status](https://travis-ci.org/eymengunay/subway.svg)](https://travis-ci.org/eymengunay/subway)
+[![Coverage Status](https://img.shields.io/coveralls/eymengunay/subway.svg)](https://coveralls.io/r/eymengunay/subway)
+[![Total Downloads](https://poser.pugx.org/eo/subway/downloads.png)](https://packagist.org/packages/eo/subway)
+[![Latest Stable Version](https://poser.pugx.org/eo/subway/v/stable.png)](https://packagist.org/packages/eo/subway)
+
 Background job processing for PHP with resque compatible db structure.
 
 ## Features
