@@ -281,6 +281,13 @@ class WorkerCommand extends RedisAwareCommand
 
     /**
      * Guess logger level
+     *
+     * Default level: WARNING
+     *
+     * -q:   ERROR
+     * -v:   NOTICE
+     * -vv:  INFO
+     * -vvv: DEBUG
      * 
      * @param  OutputInterface $output
      * @return string
@@ -291,9 +298,6 @@ class WorkerCommand extends RedisAwareCommand
             case OutputInterface::VERBOSITY_QUIET:
                 $level = Logger::ERROR;
                 break;
-            case OutputInterface::VERBOSITY_NORMAL:
-                $level = Logger::WARNING;
-                break;
             case OutputInterface::VERBOSITY_VERBOSE:
                 $level = Logger::NOTICE;
                 break;
@@ -303,6 +307,7 @@ class WorkerCommand extends RedisAwareCommand
             case OutputInterface::VERBOSITY_DEBUG:
                 $level = Logger::DEBUG;
                 break;
+            case OutputInterface::VERBOSITY_NORMAL:
             default:
                 $level = Logger::WARNING;
                 break;
