@@ -45,9 +45,11 @@ class SampleCommand extends RedisAwareCommand
         $factory = new Factory($this->redis);
 
         for ($i = 0; $i < intval($input->getOption('count')); $i++) {
-            $message = new Message($input->getOption('queue'), 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+            $message = new Message($input->getOption('queue'), 'Subway\Tests\Job\Md5Job', array(
+                'hello' => 'world'
+            ));
             $factory->enqueue($message);
-            $output->writeln(sprintf('Job %s enqueued in %s', $message->getId(), $message->getQueue()));
+            $output->writeln(sprintf('<info>Job %s enqueued in %s</info>', $message->getId(), $message->getQueue()));
         }
     }
 }
