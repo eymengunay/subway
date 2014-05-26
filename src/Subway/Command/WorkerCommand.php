@@ -194,7 +194,7 @@ class WorkerCommand extends RedisAwareCommand
                 } else if ($pid) {
                     // Parent process
                     $children->set($pid, time());
-                    $output->writeln(sprintf('[%s][%s] Starting job. Pid: %s', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $pid));
+                    $output->writeln(sprintf('[%s][%s] Starting job. Pid: %s Queue: %s', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $pid, $message->getQueue()));
                 } else {
                     // Reconnect to redis
                     $redis = $this->factory->getRedis();
