@@ -2,7 +2,6 @@
 subway.log
 
 # build
-downloads
 subway.phar
 
 # phpunit
