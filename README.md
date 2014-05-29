@@ -78,7 +78,7 @@ If you need to enqueue Message only once use `enqueueOnce` method.
 
 ### Executing jobs
 
-To execute jobs you can either use the binary file distributed with this library (see `bin` directory) or download the latest .phar archive from: http://eymengunay.github.io/subway/downloads/subway.phar
+To execute jobs you can either use the binary file distributed with this library (see `bin` directory) or download the latest .phar archive from: http://eymengunay.github.io/subway/downloads/subway-latest.phar
 
 Once you have located the binary or downloaded .phar archive start your worker using the following command:
 

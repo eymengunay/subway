@@ -62,7 +62,7 @@ copy('subway.phar', "downloads/subway.phar");
 
 echo "Committing changes...\n";
 shell_exec("git add downloads/subway-$version.phar");
-shell_exec("git add downloads/subway.phar");
+shell_exec("git add downloads/subway-latest.phar");
 shell_exec("git add manifest.json");
 shell_exec("git commit -m \"Bump version $version\"");
 
