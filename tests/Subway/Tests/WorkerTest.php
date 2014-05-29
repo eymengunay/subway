@@ -26,9 +26,9 @@ class WorkerTest extends TestCase
     public function testWorker()
     {
         $message = new Message('defult', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
-
-        $worker = new Worker('id', $this->factory);
-        $result = $worker->perform($message);
+        $job     = $message->getJobInstance();
+        $worker  = new Worker('id', $this->factory);
+        $result  = $worker->perform($job);
 
         $this->assertTrue($result);
     }
