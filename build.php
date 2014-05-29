@@ -58,7 +58,7 @@ if (is_dir('downloads') === false) {
     mkdir('downloads');
 }
 copy('subway.phar', "downloads/subway-$version.phar");
-copy('subway.phar', "downloads/subway.phar");
+copy('subway.phar', "downloads/subway-latest.phar");
 
 echo "Committing changes...\n";
 shell_exec("git add downloads/subway-$version.phar");
