@@ -11,6 +11,7 @@
 
 namespace Subway;
 
+use Subway\Exception\SubwayException;
 use Doctrine\Common\Collections\ArrayCollection;
 
 /**
