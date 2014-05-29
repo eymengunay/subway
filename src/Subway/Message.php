@@ -71,6 +71,7 @@ class Message implements \JsonSerializable
     public function jsonSerialize()
     {
         $data = array(
+            'id'    => $this->getId(),
             'queue' => $this->getQueue(),
             'class' => $this->getClass(),
             'args'  => $this->getArgs()->toArray()
@@ -98,6 +99,10 @@ class Message implements \JsonSerializable
         $array = json_decode($str, true);
         $instance = new self($array['queue'], $array['class'], $array['args']);
 
+        if (array_key_exists('id', $array)) {
+            $instance->setId($array['id']);
+        }
+
         if (array_key_exists('at', $array)) {
             $instance->setAt(new \DateTime($array['at']));
         }
@@ -123,6 +128,19 @@ class Message implements \JsonSerializable
         ));
 
         return sha1($json);
+    }
+
+    /**
+     * Set id
+     *
+     * @param  string
+     * @return self
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     /**
