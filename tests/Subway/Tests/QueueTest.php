@@ -91,6 +91,20 @@ class QueueTest extends TestCase
     }
 
     /**
+     * Test queue get jobs
+     *
+     * @depends testQueueGetJobs
+     */
+    public function testQueueGetNextMessage()
+    {
+        $queue   = $this->factory->getQueue('default');
+        $message = $queue->getNextMessage();
+
+        $this->assertTrue($message instanceof Message);
+        $this->assertTrue(is_array($message->getArgs()->toArray()));
+    }
+
+    /**
      * Test queue pop
      *
      * @depends testQueuePut
