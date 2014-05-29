@@ -13,7 +13,7 @@ namespace Subway\Tests;
 
 use Subway\Message;
 use Subway\Worker;
-use Subway\Test\TestCase;
+use Subway\Tests\TestCase;
 
 /**
  * Worker class test

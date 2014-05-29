@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Subway\Test;
+namespace Subway\Tests;
 
 use Subway\Factory;
 use Predis\Client;

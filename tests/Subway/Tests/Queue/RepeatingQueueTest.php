@@ -12,7 +12,7 @@
 namespace Subway\Tests\Queue;
 
 use Subway\Message;
-use Subway\Test\TestCase;
+use Subway\Tests\TestCase;
 
 /**
  * Repeating queue class test

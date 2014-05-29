@@ -12,7 +12,7 @@
 namespace Subway\Tests;
 
 use Subway\Message;
-use Subway\Test\TestCase;
+use Subway\Tests\TestCase;
 
 /**
  * Queue class test
