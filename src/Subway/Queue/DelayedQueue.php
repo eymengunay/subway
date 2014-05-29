@@ -68,18 +68,32 @@ class DelayedQueue extends Queue
     /**
      * {@inheritdoc}
      */
-    public function getJobs()
+    public function getMessages()
     {
-        $jobs = array();
+        $messages = array();
         $timestamps = $this->redis->zrangebyscore(sprintf('resque:%s_queue_schedule', $this->getName()), '-inf', 'inf');
         foreach ($timestamps as $timestamp) {
             $items = $this->redis->lrange(sprintf('resque:%s:%s', $this->getName(), $timestamp), 0, -1);
-            foreach ($items as $item) {
-                $jobs[] = Message::jsonUnserialize($item);
+            foreach ($items as $message) {
+                $messages[] = Message::jsonUnserialize($message);
             }
         }
 
-        return $jobs;
+        return $messages;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getNextMessage()
+    {
+        $messages   = array();
+        $timestamps = $this->redis->zrangebyscore(sprintf('resque:%s_queue_schedule', $this->getName()), '-inf', 'inf');
+        $timestamp  = current($timestamps);
+
+        $items = $this->redis->lrange(sprintf('resque:%s:%s', $this->getName(), $timestamp), 0, 0);
+
+        return current($items);
     }
 
     /**

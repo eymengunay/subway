@@ -70,22 +70,6 @@ class Queue
     }
 
     /**
-     * Get all jobs
-     *
-     * @return string
-     */
-    public function getJobs()
-    {
-        $jobs = $this->redis->lrange(sprintf('resque:queue:%s', $this->getName()), 0, -1) ?: array();
-        $data = array();
-        foreach ($jobs as $job) {
-            $data[] = Message::jsonUnserialize($job);
-        }
-
-        return $data;
-    }
-
-    /**
      * Get queue name
      *
      * @return string
@@ -96,18 +80,60 @@ class Queue
     }
 
     /**
+     * Get all jobs
+     *
+     * @return string
+     */
+    public function getJobs()
+    {
+        return $this->getMessages();
+    }
+
+    /**
+     * Get all messages
+     *
+     * @return string
+     */
+    public function getMessages()
+    {
+        $messages = $this->redis->lrange(sprintf('resque:queue:%s', $this->getName()), 0, -1) ?: array();
+        $data = array();
+        foreach ($messages as $message) {
+            $data[] = Message::jsonUnserialize($message);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get next message
+     * 
+     * @return null|Message
+     */
+    public function getNextMessage()
+    {
+        $messages = $this->redis->lrange(sprintf('resque:queue:%s', $this->getName()), 0, 0) ?: array();
+        $message  = current($messages);
+        if (!$message) {
+            return;
+        }
+
+        return Message::jsonUnserialize($message);
+    }
+
+    /**
      * Pop message
      *
      * @return null|Message
      */
     public function pop()
     {
-        $item = $this->redis->lpop(sprintf('resque:queue:%s', $this->getName()));
-        if (!$item) {
+        $message = $this->redis->lpop(sprintf('resque:queue:%s', $this->getName()));
+        if (!$message) {
             return;
         }
 
-        return Message::jsonUnserialize($item);
+        return Message::jsonUnserialize($message);
     }
 
     /**
