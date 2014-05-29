@@ -13,7 +13,6 @@ namespace Subway;
 
 use Subway\Job;
 use Subway\Factory;
-use Subway\Exception\SubwayException;
 
 /**
  * Worker class
@@ -51,7 +50,7 @@ class Worker
     public function perform(Job $job)
     {
         $message = $job->getMessage();
-        
+
         try {
             $this->factory->getLogger()->addNotice(sprintf('[%s] Starting job', $message->getId()));
 
