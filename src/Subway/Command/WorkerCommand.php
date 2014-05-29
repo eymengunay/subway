@@ -194,7 +194,7 @@ class WorkerCommand extends RedisAwareCommand
                 } else if ($pid) {
                     // Parent process
                     $children->set($pid, time());
-                    $output->writeln(sprintf('[%s][%s] Starting job. Pid: %s Queue: %s', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $pid, $message->getQueue()));
+                    $output->writeln(sprintf('[%s][%s] Starting job %s. Pid: %s Queue: %s', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $job->getName(), $pid, $message->getQueue()));
                 } else {
                     // Reconnect to redis
                     $redis = $this->factory->getRedis();
@@ -203,10 +203,13 @@ class WorkerCommand extends RedisAwareCommand
                     }
                     $redis->connect();
 
+                    // Get job instance
+                    $job = $message->getJobInstance();
+
                     // Child process
                     $worker = new Worker($this->id, $this->factory);
-                    if ($worker->perform($message)) {
-                        $output->writeln(sprintf('<info>[%s][%s] Finised successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), round(memory_get_peak_usage() / 1024 / 1024, 2)));
+                    if ($worker->perform($job)) {
+                        $output->writeln(sprintf('<info>[%s][%s] %s finished successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $job->getName(), round(memory_get_peak_usage() / 1024 / 1024, 2)));
                     } else {
                         $output->writeln(sprintf('<error>[%s][%s] Job execution failed.</error>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7)));
                     }

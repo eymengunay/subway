@@ -40,6 +40,28 @@ abstract class Job
     }
 
     /**
+     * Get message
+     * 
+     * @return Message
+     */
+    final public function getMessage()
+    {
+        return $this->message;
+    }
+
+    /**
+     * Get name
+     * 
+     * @return string
+     */
+    public function getName()
+    {
+        $reflect = new \ReflectionClass($this);
+
+        return $reflect->getShortName();
+    }
+
+    /**
      * Perform job
      */
     abstract public function perform();

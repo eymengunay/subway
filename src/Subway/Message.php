@@ -115,6 +115,28 @@ class Message implements \JsonSerializable
     }
 
     /**
+     * Get job instance
+     * 
+     * @return Job
+     */
+    public function getJobInstance()
+    {
+        $class = $this->getClass();
+        if (!class_exists($class)) {
+            throw new SubwayException("Could not find job class $class");
+        }
+
+        if (!method_exists($class, 'perform')) {
+            throw new SubwayException("Job class $class does not contain a perform method");
+        }
+
+        $instance = new $class;
+        $instance->setMessage($this);
+
+        return $instance;
+    }
+
+    /**
      * Calculate hash
      * 
      * @return string

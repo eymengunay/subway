@@ -45,28 +45,18 @@ class Worker
     /**
      * Perform job
      *
-     * @param  Message $message
+     * @param  Job $job
      * @return bool
      */
-    public function perform(Message $message)
+    public function perform(Job $job)
     {
-        if (!class_exists($message->getClass())) {
-            throw new SubwayException('Could not find job class ' . $message->getClass());
-        }
-
-        if (!method_exists($message->getClass(), 'perform')) {
-            throw new SubwayException('Job class ' . $message->getClass() . ' does not contain a perform method.');
-        }
-
-        $class = $message->getClass();
-        $instance = new $class;
-        $instance->setMessage($message);
-
+        $message = $job->getMessage();
+        
         try {
             $this->factory->getLogger()->addNotice(sprintf('[%s] Starting job', $message->getId()));
 
             $this->factory->updateStatus($message->getId(), Job::STATUS_RUNNING);
-            $instance->perform($message->getArgs());
+            $job->perform($message->getArgs());
             $this->factory->updateStatus($message->getId(), Job::STATUS_COMPLETE);
 
             $this->factory->getRedis()->incrby('resque:stat:processed', 1);
