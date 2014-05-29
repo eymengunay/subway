@@ -20,6 +20,7 @@ use Subway\Queue\DelayedQueue;
 use Subway\Queue\RepeatingQueue;
 use Predis\Client;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Monolog\Handler\RedisHandler;
 use Monolog\Processor\MemoryPeakUsageProcessor;
 use Monolog\Logger;
@@ -189,10 +190,7 @@ class Factory
         $this->getEventDispatcher()->dispatch(Events::ENQUEUE, new EnqueueEvent($message));
 
         if ($this->logger) {
-            $this->logger->addNotice(sprintf('Job %s enqueued in %s', $message->getId(), $queue->getName()), array(
-                'class' => $message->getClass(),
-                'args'  => $message->getArgs()
-            ));
+            $this->messageAwareLog(LogLevel::NOTICE, sprintf('Job %s enqueued in %s', $message->getId(), $queue->getName()), $message);
         }
 
         return $message->getId();
@@ -209,11 +207,8 @@ class Factory
     {
         $lonerKey = sprintf('resque:loners:queue:%s:job:%s', $message->getQueue(), $message->getHash());
 
-        if ($this->redis->has($lonerKey)) {
-            $this->logger->addNotice(sprintf('Job with hash %s already exists', $message->getHash()), array(
-                'class' => $message->getClass(),
-                'args'  => $message->getArgs()
-            ));
+        if ($this->redis->exists($lonerKey)) {
+            $this->messageAwareLog(LogLevel::NOTICE, sprintf('Job with hash %s already exists', $message->getHash()), $message);
 
             return $this->redis->get($lonerKey);
         }
@@ -222,6 +217,21 @@ class Factory
         $this->redis->set($lonerKey, $id);
 
         return $id;
+    }
+
+    /**
+     * Message aware log
+     * 
+     * @param string  $level
+     * @param string  $str
+     * @param Message $message
+     */
+    protected function messageAwareLog($level, $str, Message $message)
+    {
+        $this->logger->log($level, $str, array(
+            'class' => $message->getClass(),
+            'args'  => $message->getArgs()
+        ));
     }
 
     /**
