@@ -1,9 +1,6 @@
 # logs
 subway.log
 
-# build
-subway.phar
-
 # phpunit
 report
 report.txt
