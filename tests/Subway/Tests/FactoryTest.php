@@ -14,6 +14,7 @@ namespace Subway\Tests;
 use Subway\Message;
 use Subway\Tests\TestCase;
 use Predis\Client;
+use Monolog\Logger;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -65,6 +66,21 @@ class FactoryTest extends TestCase
     }
 
     /**
+     * Test enqueue once
+     *
+     * @depends testGetQueues
+     */
+    public function testEnqueueOnce()
+    {
+        $message = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $id1 = $this->factory->enqueueOnce($message);
+        $id2 = $this->factory->enqueueOnce($message);
+
+        $this->assertTrue((bool) $id1);
+        $this->assertEquals($id1, $id2);
+    }
+
+    /**
      * Test get redis
      */
     public function testGetRedis()
@@ -82,5 +98,33 @@ class FactoryTest extends TestCase
         $redis = $this->factory->getEventDispatcher();
 
         $this->assertTrue($redis instanceof EventDispatcherInterface);
+    }
+
+    /**
+     * Test workers
+     */
+    public function testWorkers()
+    {
+        $workers = $this->factory->getWorkers();
+
+        $this->assertTrue(is_array($workers));
+        $this->assertEquals(0, count($workers));
+
+        $this->factory->registerWorker('test');
+        $this->assertEquals(1, count($this->factory->getWorkers()));
+
+        $this->factory->unregisterWorker('test');
+        $this->assertEquals(0, count($this->factory->getWorkers()));
+    }
+
+    /**
+     * Test set logger
+     */
+    public function testSetLogger()
+    {
+        $logger = new Logger('subway');
+        $this->factory->setLogger($logger);
+
+        $this->assertEquals($logger, $this->factory->getLogger());
     }
 }

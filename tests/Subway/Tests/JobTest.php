@@ -11,6 +11,8 @@
 
 namespace Subway\Tests;
 
+use Subway\Message;
+
 /**
  * Job class test
  */
@@ -29,5 +31,27 @@ class JobTest extends \PHPUnit_Framework_TestCase
         ;
 
         $this->assertTrue($stub->perform());
+    }
+
+    /**
+     * Test name
+     */
+    public function testName()
+    {
+        $message = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $job     = $message->getJobInstance();
+
+        $this->assertEquals($job->getName(), 'Md5Job');
+    }
+
+    /**
+     * Test name
+     */
+    public function testPerform()
+    {
+        $message = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $job     = $message->getJobInstance();
+
+        $job->perform();
     }
 }

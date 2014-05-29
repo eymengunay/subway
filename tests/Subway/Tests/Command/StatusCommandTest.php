@@ -12,14 +12,13 @@
 namespace Subway\Tests\Command;
 
 use Subway\Application;
-use Subway\Command\StartCommand;
+use Subway\Command\StatusCommand;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * Worker command class test
- * extends \PHPUnit_Framework_TestCase
+ * Status command test
  */
-class StartCommandTest
+class StatusCommandTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * Test execute
@@ -27,10 +26,19 @@ class StartCommandTest
     public function testExecute()
     {
         $application = new Application();
-        $application->add(new StartCommand());
+        $application->add(new StatusCommand());
 
-        $command = $application->find('start');
+        $command       = $application->find('status');
         $commandTester = new CommandTester($command);
         $commandTester->execute(array());
+
+        $json   = $commandTester->getDisplay();
+        $status = json_decode($json, true);
+
+        $this->assertTrue(array_key_exists('queue', $status));
+        $this->assertTrue(array_key_exists('worker', $status));
+
+        $this->assertTrue(is_array($status['queue']));
+        $this->assertTrue(is_array($status['worker']));
     }
 }
