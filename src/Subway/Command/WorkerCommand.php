@@ -186,6 +186,14 @@ class WorkerCommand extends RedisAwareCommand
                     continue;
                 }
 
+                // Get job instance
+                try {
+                    $job = $message->getJobInstance();
+                } catch (SubwayException $e) {
+                    $output->writeln(sprintf('<error>[%s][%s] Job execution failed: %s </error>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $e->getMessage()));
+                    continue;
+                }
+
                 $pid = pcntl_fork();
                 if ($pid == -1) {
                     // Wtf?
@@ -202,9 +210,6 @@ class WorkerCommand extends RedisAwareCommand
                         $redis->disconnect();
                     }
                     $redis->connect();
-
-                    // Get job instance
-                    $job = $message->getJobInstance();
 
                     // Child process
                     $worker = new Worker($this->id, $this->factory);
