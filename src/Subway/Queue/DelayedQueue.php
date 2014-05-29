@@ -87,13 +87,13 @@ class DelayedQueue extends Queue
      */
     public function getNextMessage()
     {
-        $messages   = array();
         $timestamps = $this->redis->zrangebyscore(sprintf('resque:%s_queue_schedule', $this->getName()), '-inf', 'inf');
         $timestamp  = current($timestamps);
 
-        $items = $this->redis->lrange(sprintf('resque:%s:%s', $this->getName(), $timestamp), 0, 0);
-
-        return current($items);
+        $items   = $this->redis->lrange(sprintf('resque:%s:%s', $this->getName(), $timestamp), 0, 0);
+        $message = current($items);
+        
+        return Message::jsonUnserialize($message);
     }
 
     /**
