@@ -190,7 +190,7 @@ class WorkerCommand extends RedisAwareCommand
                 try {
                     $job = $message->getJobInstance();
                 } catch (SubwayException $e) {
-                    $output->writeln(sprintf('<error>[%s][%s] Job execution failed: %s </error>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $e->getMessage()));
+                    $output->writeln(sprintf('<error>[%s][%s] Message error: %s </error>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $e->getMessage()));
                     continue;
                 }
 
@@ -214,9 +214,9 @@ class WorkerCommand extends RedisAwareCommand
                     // Child process
                     $worker = new Worker($this->id, $this->factory);
                     if ($worker->perform($job)) {
-                        $output->writeln(sprintf('<info>[%s][%s] %s finished successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $job->getName(), round(memory_get_peak_usage() / 1024 / 1024, 2)));
+                        $output->writeln(sprintf('<info>[%s][%s] Job %s finished successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $job->getName(), round(memory_get_peak_usage() / 1024 / 1024, 2)));
                     } else {
-                        $output->writeln(sprintf('<error>[%s][%s] Job execution failed.</error>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7)));
+                        $output->writeln(sprintf('<error>[%s][%s] Job %s execution failed.</error>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $job->getName()));
                     }
 
                     posix_kill(getmypid(), 9);
