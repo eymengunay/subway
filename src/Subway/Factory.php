@@ -205,7 +205,7 @@ class Factory
      */
     public function enqueueOnce(Message $message)
     {
-        $lonerKey = sprintf('resque:loners:queue:%s:job:%s', $message->getQueue(), $message->getHash());
+        $lonerKey = $this->getLonerKey($message);
 
         if ($this->redis->exists($lonerKey)) {
             $this->messageAwareLog(LogLevel::NOTICE, sprintf('Job with hash %s already exists', $message->getHash()), $message);
@@ -217,6 +217,11 @@ class Factory
         $this->redis->set($lonerKey, $id);
 
         return $id;
+    }
+
+    public function getLonerKey(Message $message)
+    {
+        return sprintf('resque:loners:queue:%s:job:%s', $message->getQueue(), $message->getHash());
     }
 
     /**
