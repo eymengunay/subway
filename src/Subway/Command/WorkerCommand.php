@@ -96,7 +96,7 @@ class WorkerCommand extends RedisAwareCommand
         $this->factory->setLogger($this->logger);
 
         // Register worker
-        $this->id = gethostname() . ':'.getmypid() . ':' . implode(',', $input->getArgument('queues') ?: array('*'));
+        $this->id = gethostname() . ':' . getmypid() . ':' . implode(',', $input->getArgument('queues') ?: array('*'));
         $this->factory->registerWorker($this->id);
         $this->logger->addInfo("Worker $this->id is ready");
     }
@@ -116,7 +116,7 @@ class WorkerCommand extends RedisAwareCommand
         $loop->addPeriodicTimer($input->getOption('interval'), $this->delayedTimer($output));
         $loop->addPeriodicTimer($input->getOption('interval'), $this->repeatingTimer($output));
 
-        if ( (bool)$input->getOption('detect-leaks') ) {
+        if ( (bool) $input->getOption('detect-leaks') ) {
             $loop->addPeriodicTimer($input->getOption('interval'), $this->leakTimer($output));
         }
 
