@@ -68,6 +68,9 @@ class Worker
             return false;
         }
 
+        $lonerKey = $this->factory->getLonerKey($message);
+        $this->factory->getRedis()->del($lonerKey);
+
         return true;
     }
 
