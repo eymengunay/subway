@@ -92,6 +92,19 @@ To see all available options and arguments see command help:
 php subway.phar worker -h
 ```
 
+### Commands
+
+| command           | description                                   |
+|----------------   |---------------------------------------------- |
+| clear             | Clear subway database                         |
+| help              | Displays help for a command                   |
+| init              | Create a new subway configuration file        |
+| list              | Lists commands                                |
+| sample            | Loads sample jobs                             |
+| self-update       | Updates subway.phar to the latest version     |
+| status            | Show subway status                            |
+| worker            | Starts a subway worker                        |
+
 ## Reporting an issue or a feature request
 
 Issues and feature requests related to this library are tracked in the Github issue tracker: https://github.com/eymengunay/subway/issues
