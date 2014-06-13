@@ -11,7 +11,6 @@
 
 namespace Subway\Command;
 
-use Subway\Factory;
 use React\EventLoop\Factory as React;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Status command
  */
-class StatusCommand extends RedisAwareCommand
+class StatusCommand extends ConfigAwareCommand
 {
     /**
      * {@inheritdoc}
@@ -32,8 +31,6 @@ class StatusCommand extends RedisAwareCommand
             ->setDescription('Show subway status')
             ->addOption('live', 'l', InputOption::VALUE_NONE, 'Live status')
         ;
-
-        parent::configure();
     }
 
     /**
@@ -41,7 +38,7 @@ class StatusCommand extends RedisAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {   
-        if ( (bool)$input->getOption('live') ) {
+        if ( (bool) $input->getOption('live') ) {
             declare(ticks=1);
             $loop = React::create();
 
@@ -66,7 +63,7 @@ class StatusCommand extends RedisAwareCommand
     protected function status(InputInterface $input, OutputInterface $output)
     {
         return array(
-            'queue' => $this->queueStatus($input, $output),
+            'queue'  => $this->queueStatus($input, $output),
             'worker' => $this->workerStatus($input, $output)
         );
     }
@@ -80,13 +77,12 @@ class StatusCommand extends RedisAwareCommand
     {
         $rows = array();
 
-        $factory = new Factory($this->redis);
-        foreach ($factory->getQueues() as $queue) {
+        foreach ($this->getFactory()->getQueues() as $queue) {
             $rows[$queue->getName()] = $queue->count();
         }
 
-        $delayedQueue   = $factory->getDelayedQueue();
-        $repeatingQueue = $factory->getRepeatingQueue();
+        $delayedQueue   = $this->getFactory()->getDelayedQueue();
+        $repeatingQueue = $this->getFactory()->getRepeatingQueue();
 
         if ($delayedCount = $delayedQueue->count()) {
             $rows[$delayedQueue->getName()] = $delayedCount;
@@ -108,8 +104,7 @@ class StatusCommand extends RedisAwareCommand
     {
         $rows = array();
 
-        $factory = new Factory($this->redis);
-        foreach ($factory->getWorkers() as $worker) {
+        foreach ($this->getFactory()->getWorkers() as $worker) {
             list($host, $pid, $queues) = explode(':', $worker);
             $rows[] = array(
                 'host'   => $host,

@@ -13,7 +13,6 @@ namespace Subway\Tests\Command;
 
 use Subway\Application;
 use Subway\Command\SampleCommand;
-use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * Sample command test

@@ -212,7 +212,7 @@ class Message implements \JsonSerializable
     /**
      * Get args
      * 
-     * @return array
+     * @return ArrayCollection
      */
     public function getArgs()
     {

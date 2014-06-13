@@ -13,7 +13,6 @@ namespace Subway\Tests\Command;
 
 use Subway\Application;
 use Subway\Command\ClearCommand;
-use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * Clear command test

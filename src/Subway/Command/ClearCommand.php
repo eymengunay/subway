@@ -11,14 +11,13 @@
 
 namespace Subway\Command;
 
-use Subway\Factory;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Clear command
  */
-class ClearCommand extends RedisAwareCommand
+class ClearCommand extends ConfigAwareCommand
 {
     /**
      * {@inheritdoc}
@@ -29,8 +28,6 @@ class ClearCommand extends RedisAwareCommand
             ->setName('clear')
             ->setDescription('Clear subway database')
         ;
-
-        parent::configure();
     }
 
     /**
@@ -50,8 +47,7 @@ class ClearCommand extends RedisAwareCommand
             }
         }
 
-        $factory = new Factory($this->redis);
-        $factory->clear();
+        $this->getFactory()->clear();
         $output->writeln('<info>Database cleared successfully</info>');
     }
 }

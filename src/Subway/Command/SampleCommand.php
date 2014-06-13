@@ -11,7 +11,6 @@
 
 namespace Subway\Command;
 
-use Subway\Factory;
 use Subway\Message;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Sample command
  */
-class SampleCommand extends RedisAwareCommand
+class SampleCommand extends ConfigAwareCommand
 {
     /**
      * {@inheritdoc}
@@ -30,11 +29,9 @@ class SampleCommand extends RedisAwareCommand
         $this
             ->setName('sample')
             ->setDescription('Loads sample jobs')
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Sample job count', 1)
+            ->addOption('count', null, InputOption::VALUE_REQUIRED, 'Sample job count', 1)
             ->addOption('queue', null, InputOption::VALUE_REQUIRED, 'Sample job queue', 'sample')
         ;
-
-        parent::configure();
     }
 
     /**
@@ -42,13 +39,11 @@ class SampleCommand extends RedisAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $factory = new Factory($this->redis);
-
         for ($i = 0; $i < intval($input->getOption('count')); $i++) {
             $message = new Message($input->getOption('queue'), 'Subway\Tests\Job\Md5Job', array(
                 'hello' => 'world'
             ));
-            $factory->enqueue($message);
+            $this->getFactory()->enqueue($message);
             $output->writeln(sprintf('<info>Job %s enqueued in %s</info>', $message->getId(), $message->getQueue()));
         }
     }

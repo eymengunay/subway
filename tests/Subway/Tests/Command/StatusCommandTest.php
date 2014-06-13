@@ -13,7 +13,6 @@ namespace Subway\Tests\Command;
 
 use Subway\Application;
 use Subway\Command\StatusCommand;
-use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * Status command test

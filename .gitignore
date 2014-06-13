@@ -1,5 +1,8 @@
+# configuration
+subway.yml
+
 # logs
-subway.log
+*.log
 
 # build
 subway.phar
