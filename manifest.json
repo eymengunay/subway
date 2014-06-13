@@ -28,5 +28,11 @@
         "sha1": "9f86c96f779fc43f1545b6edf47c8fa9be13a3a2",
         "url": "http:\/\/eymengunay.github.io\/subway\/downloads\/subway-0.2.2.phar",
         "version": "0.2.2"
+    },
+    {
+        "name": "subway.phar",
+        "sha1": "77c2b0800410527e2bf621bab2146fcaccadb487",
+        "url": "http:\/\/eymengunay.github.io\/subway\/downloads\/subway-0.3.0.phar",
+        "version": "0.3.0"
     }
 ]
