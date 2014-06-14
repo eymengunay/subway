@@ -13,6 +13,7 @@ namespace Subway\Tests\Command;
 
 use Subway\Application;
 use Subway\Command\WorkerCommand;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 /**
  * Worker command test
@@ -20,10 +21,52 @@ use Subway\Command\WorkerCommand;
 class WorkerCommandTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * Test execute
+     * Test welcome
      */
-    public function testExecute()
+    public function testWelcome()
     {
-        $command = new WorkerCommand();
+        $application = new Application();
+        $application->add(new WorkerCommand());
+        
+        $command = $application->find('worker');
+        $method  = new \ReflectionMethod(
+          'Subway\Command\WorkerCommand', 'getWelcome'
+        );
+        $method->setAccessible(true);
+        $welcome = $method->invoke($command);
+
+        $this->assertEquals(gettype($welcome), 'string');
+    }
+
+    /**
+     * Test delayed timer
+     */
+    public function testDelayedTimer()
+    {
+        $application = new Application();
+        $application->add(new WorkerCommand());
+        
+        $command = $application->find('worker');
+        $method  = new \ReflectionMethod(
+          'Subway\Command\WorkerCommand', 'delayedTimer'
+        );
+        $method->setAccessible(true);
+        $method->invokeArgs($command, array(new ConsoleOutput()));
+    }
+
+    /**
+     * Test repeating timer
+     */
+    public function testrepeatingTimer()
+    {
+        $application = new Application();
+        $application->add(new WorkerCommand());
+        
+        $command = $application->find('worker');
+        $method  = new \ReflectionMethod(
+          'Subway\Command\WorkerCommand', 'repeatingTimer'
+        );
+        $method->setAccessible(true);
+        $method->invokeArgs($command, array(new ConsoleOutput()));
     }
 }
