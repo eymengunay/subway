@@ -12,12 +12,24 @@
 namespace Subway\Tests;
 
 use Subway\Application;
+use Symfony\Component\Console\Command\Command;
 
 /**
  * Symfony console application class test
  */
 class ApplicationTest extends \PHPUnit_Framework_TestCase
 {
+    /**
+     * Get test
+     */
+    public function testGet()
+    {
+        $application = new Application('Subway', 'test');
+        $command = $application->get('help');
+        
+        $this->assertTrue($command instanceof Command);
+    }
+
     /**
      * Test help text
      */
