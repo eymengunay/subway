@@ -38,34 +38,10 @@ class StatusCommand extends ConfigAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {   
-        if ( (bool) $input->getOption('live') ) {
-            declare(ticks=1);
-            $loop = React::create();
-
-            $loop->addPeriodicTimer(1, function () use ($input, $output) {
-                $status = $this->status($input, $output);
-                $output->writeln(json_encode($status, JSON_PRETTY_PRINT));
-            });
-
-            $loop->run();
-        } else {
-            $output->writeln(json_encode($this->status($input, $output), JSON_PRETTY_PRINT));
-        }
-    }
-
-    /**
-     * Status
-     * 
-     * @param  InputInterface  $input
-     * @param  OutputInterface $output
-     * @return array
-     */
-    protected function status(InputInterface $input, OutputInterface $output)
-    {
-        return array(
+        $output->writeln(json_encode(array(
             'queue'  => $this->queueStatus($input, $output),
             'worker' => $this->workerStatus($input, $output)
-        );
+        ), JSON_PRETTY_PRINT));
     }
 
     /**
