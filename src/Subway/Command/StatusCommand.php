@@ -11,7 +11,6 @@
 
 namespace Subway\Command;
 
-use React\EventLoop\Factory as React;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
