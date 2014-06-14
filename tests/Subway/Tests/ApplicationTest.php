@@ -38,6 +38,7 @@ class ApplicationTest extends \PHPUnit_Framework_TestCase
     {        
         $application = new Application('Subway', 'test');
         $application->setAutoExit(false);
+        $application->setDefaultCommand('status');
 
         $tester = new ApplicationTester($application);
         $tester->run(array(''));

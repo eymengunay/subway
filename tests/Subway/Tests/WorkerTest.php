@@ -32,4 +32,17 @@ class WorkerTest extends TestCase
 
         $this->assertTrue($result);
     }
+
+    /**
+     * Test failing
+     */
+    public function testFailing()
+    {
+        $message = new Message('defult', 'Subway\Tests\Job\FailingJob');
+        $job     = $message->getJobInstance();
+        $worker  = new Worker('id', $this->factory);
+        $result  = $worker->perform($job);
+
+        $this->assertFalse($result);
+    }
 }
