@@ -12,11 +12,11 @@
 namespace Subway;
 
 use Subway\Command as Commands;
-use Subway\Exception\SubwayException;
 use Predis\Client;
 use Monolog\Logger;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Processor\MemoryPeakUsageProcessor;
+use Pimple;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,6 +28,48 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class Application extends BaseApplication
 {
+    /**
+     * @var Pimple
+     */
+    protected $container;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function __construct($name = 'Subway', $version = 'UNKNOWN')
+    {
+        $this->container = new Pimple();
+        $this->container['config'] = function() {
+            return new Config();
+        };
+
+        parent::__construct($name, $version);
+    }
+
+    /**
+     * Get container
+     * 
+     * @return Pimple
+     */
+    public function getContainer()
+    {
+        return $this->container;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function add(Command $command)
+    {
+        $command = parent::add($command);
+
+        if ($command instanceof Commands\ConfigAwareCommand) {
+            $command->configureInputDefinition();
+        }
+
+        return $command;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -50,21 +92,16 @@ class Application extends BaseApplication
     /**
      * {@inheritdoc}
      */
-    public function get($name)
+    protected function getDefaultInputDefinition()
     {
-        $commands = $this->all();
-        if (!isset($commands[$name])) {
-            throw new \InvalidArgumentException(sprintf('The command "%s" does not exist.', $name));
-        }
+        $definition = parent::getDefaultInputDefinition();
+        
+        $options = array(
+            new InputOption('--cwd', '-c', InputOption::VALUE_REQUIRED, 'Working directory path.'),
+        );
+        $definition->setOptions(array_merge($options, $definition->getOptions()));
 
-        $command = $commands[$name];
-
-        if ($command instanceof Commands\ConfigAwareCommand) {
-            $definition = $this->getDefinition();
-            $definition->addOption(new InputOption('--config', '-c', InputOption::VALUE_REQUIRED, 'Configuration file path.', 'subway.yml'));
-        }
-
-        return parent::get($name);
+        return $definition;
     }
 
     /**
@@ -72,43 +109,39 @@ class Application extends BaseApplication
      */
     protected function doRunCommand(Command $command, InputInterface $input, OutputInterface $output)
     {
+        // Configure
         if ($command instanceof Commands\ConfigAwareCommand) {
-            // Get & check configuration file
-            $file = $input->getParameterOption(array('--config', '-c')) ?: null;
-            if (file_exists($file) === false) {
-                $output->writeln("<comment>WARNING: Configuration file not found, using default values!</comment>");
-            }
+            $command->processConfiguration($input, $output);
+        }
 
-            // Create config class
-            $config = new Config($file);
-            $command->setConfig($config);
-
-            // Autoloader
-            $autoload = $config->get('autoload');
-            if (file_exists($autoload) === false) {
-                throw new SubwayException('Autoload file not found');
-            }
-            require_once $autoload;
-            
-            // Connect to redis
+        // Prepare container
+        if ($command instanceof Commands\ContainerAwareCommand) {
+            $config = $this->container['config'];
+            // Register redis service
             try {
                 $redis = new Client(sprintf('tcp://%s', $config->get('host')), array('prefix' => $config->get('prefix')));
                 $redis->connect();
-                $command->setRedis($redis);
             } catch (\Exception $e) {
-                return $output->writeln('<error> An error occured while connecting to redis. </error>');
+                return $output->writeln('<error> An error occured while connecting to redis! </error>');
             }
+            $this->container['redis'] = function() use ($redis) {
+                return $redis;
+            };
 
-            // Logger
+            // Register logger service
             $logger = new Logger('subway');
             $logger->pushProcessor(new MemoryPeakUsageProcessor());
             $logger->pushHandler(new RotatingFileHandler($config->get('log'), 0, $this->guessLoggerLevel($output)));
-            $command->setLogger($logger);
+            $this->container['logger'] = function() use ($logger) {
+                return $logger;
+            };
 
-            // Factory
+            // Register factory service
             $factory = new Factory($redis);
             $factory->setLogger($logger);
-            $command->setFactory($factory);
+            $this->container['factory'] = function() use ($factory) {
+                return $factory;
+            };
         }
 
         return parent::doRunCommand($command, $input, $output);

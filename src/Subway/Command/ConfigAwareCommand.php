@@ -11,126 +11,40 @@
 
 namespace Subway\Command;
 
-use Subway\Config;
-use Subway\Factory;
-use Predis\Client;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Config aware command
  */
-abstract class ConfigAwareCommand extends Command
+abstract class ConfigAwareCommand extends ContainerAwareCommand
 {
-    /**
-     * @var Config
-     */
-    private $config;
+    const OPTION_PREFIX = 'config-';
 
     /**
-     * @var Client
+     * Configure input definition
      */
-    private $redis;
-
-    /**
-     * @var Factory
-     */
-    private $factory;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * Set config
-     * 
-     * @param  Config $config
-     * @return self
-     */
-    public function setConfig(Config $config)
+    public function configureInputDefinition()
     {
-        $this->config = $config;
-
-        return $this;
+        $config = $this->get('config');
+        $tree   = $config->getConfigTreeBuilder();
+        foreach ($tree->buildTree()->getChildren() as $child) {
+            $this->addOption(self::OPTION_PREFIX.$child->getName(), null, InputOption::VALUE_REQUIRED, $child->getInfo(), $config->get($child->getName()));
+        }
     }
 
     /**
-     * Get config
-     * 
-     * @return Config
+     * {@inheritdoc}
      */
-    public function getConfig()
+    public function processConfiguration(InputInterface $input, OutputInterface $output)
     {
-        return $this->config;
-    }
-
-    /**
-     * Set redis
-     * 
-     * @param  Client $redis
-     * @return self
-     */
-    public function setRedis(Client $redis)
-    {
-        $this->redis = $redis;
-
-        return $this;
-    }
-
-    /**
-     * Get redis
-     * 
-     * @return Client
-     */
-    public function getRedis()
-    {
-        return $this->redis;
-    }
-
-    /**
-     * Set factory
-     * 
-     * @param  Factory $factory
-     * @return self
-     */
-    public function setFactory(Factory $factory)
-    {
-        $this->factory = $factory;
-
-        return $this;
-    }
-
-    /**
-     * Get factory
-     * 
-     * @return Factory
-     */
-    public function getFactory()
-    {
-        return $this->factory;
-    }
-
-    /**
-     * Set logger
-     * 
-     * @param  LoggerInterface $logger
-     * @return self
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-
-        return $this;
-    }
-
-    /**
-     * Get logger
-     * 
-     * @return LoggerInterface
-     */
-    public function getLogger()
-    {
-        return $this->logger;
+        $config = $this->get('config');
+        foreach ($config->all() as $key => $val) {
+            $optionKey = '--'.self::OPTION_PREFIX.$key;
+            if ($optionVal = $input->getParameterOption($optionKey)) {
+                $config->set($key, $optionVal);
+            }
+        }
     }
 }

@@ -49,8 +49,8 @@ class WorkerCommand extends ConfigAwareCommand
     {
         // Register worker
         $this->id = gethostname() . ':' . getmypid() . ':' . implode(',', $input->getArgument('queues') ?: array('*'));
-        $this->getFactory()->registerWorker($this->id);
-        $this->getLogger()->addInfo("Worker $this->id is ready");
+        $this->get('factory')->registerWorker($this->id);
+        $this->get('logger')->addInfo("Worker $this->id is ready");
     }
 
     /**
@@ -64,9 +64,9 @@ class WorkerCommand extends ConfigAwareCommand
         $this->installSignalHandlers($children);
 
         $loop = $this->createLoop($input, $output);
-        $loop->addPeriodicTimer($this->getConfig()->get('interval'), $this->queueTimer($input, $output, $children));
-        $loop->addPeriodicTimer($this->getConfig()->get('interval'), $this->delayedTimer($output));
-        $loop->addPeriodicTimer($this->getConfig()->get('interval'), $this->repeatingTimer($output));
+        $loop->addPeriodicTimer($this->get('config')->get('interval'), $this->queueTimer($input, $output, $children));
+        $loop->addPeriodicTimer($this->get('config')->get('interval'), $this->delayedTimer($output));
+        $loop->addPeriodicTimer($this->get('config')->get('interval'), $this->repeatingTimer($output));
 
         $loop->run();
     }
@@ -107,17 +107,17 @@ class WorkerCommand extends ConfigAwareCommand
             }
 
             try {
-                $queues = $this->getFactory()->getQueues($input->getArgument('queues'));
+                $queues = $this->get('factory')->getQueues($input->getArgument('queues'));
             } catch (\Exception $e) {
-                $this->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+                $this->get('logger')->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                 throw $e;
             }
 
             foreach ($queues as $queue) {
                 // Check max concurrent limit
-                if ($children->count() >= $this->getConfig()->get('concurrent')) {
-                    $this->getLogger()->addInfo('Max concurrent limit of '.$this->getConfig()->get('concurrent').' reached');
+                if ($children->count() >= $this->get('config')->get('concurrent')) {
+                    $this->get('logger')->addInfo('Max concurrent limit of '.$this->get('config')->get('concurrent').' reached');
                     break;
                 }
 
@@ -125,7 +125,7 @@ class WorkerCommand extends ConfigAwareCommand
                 try {
                     $message = $queue->pop();
                 } catch (\Exception $e) {
-                    $this->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+                    $this->get('logger')->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
                     throw $e;
                 }
@@ -145,7 +145,7 @@ class WorkerCommand extends ConfigAwareCommand
                 $pid = pcntl_fork();
                 if ($pid == -1) {
                     // Wtf?
-                    $this->getLogger()->addError('Could not fork');
+                    $this->get('logger')->addError('Could not fork');
                     throw new SubwayException('Could not fork');
                 } else if ($pid) {
                     // Parent process
@@ -160,7 +160,7 @@ class WorkerCommand extends ConfigAwareCommand
                     $redis->connect();
 
                     // Child process
-                    $worker = new Worker($this->id, $this->getFactory());
+                    $worker = new Worker($this->id, $this->get('factory'));
                     if ($worker->perform($job)) {
                         $output->writeln(sprintf('<info>[%s][%s] Job %s finished successfully. Mem: %sMB</info>', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $job->getName(), round(memory_get_peak_usage() / 1024 / 1024, 2)));
                     } else {
@@ -182,7 +182,7 @@ class WorkerCommand extends ConfigAwareCommand
     protected function delayedTimer(OutputInterface $output)
     {
         return function () use ($output) {
-            $delayedQueue = $this->getFactory()->getDelayedQueue();
+            $delayedQueue = $this->get('factory')->getDelayedQueue();
             $this->handleScheduled($output, $delayedQueue);
         };
     }
@@ -196,7 +196,7 @@ class WorkerCommand extends ConfigAwareCommand
     protected function repeatingTimer(OutputInterface $output)
     {
         return function () use ($output) {
-            $repeatingQueue = $this->getFactory()->getRepeatingQueue();
+            $repeatingQueue = $this->get('factory')->getRepeatingQueue();
             $this->handleScheduled($output, $repeatingQueue);
         };
     }
@@ -216,7 +216,7 @@ class WorkerCommand extends ConfigAwareCommand
         try {
             $message = $queue->pop();
         } catch (\Exception $e) {
-            $this->getLogger()->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
+            $this->get('logger')->addError(sprintf('Uncaught exception. Code: %s Message: %s', $e->getCode(), $e->getMessage()));
 
             throw $e;
         }
@@ -227,10 +227,10 @@ class WorkerCommand extends ConfigAwareCommand
                 ->setAt(null)
                 ->setInterval(null)
             ;
-            $id = $this->getFactory()->enqueue($message);
+            $id = $this->get('factory')->enqueue($message);
 
             $name = ucfirst($queue->getName());
-            $this->getLogger()->addNotice(sprintf('[%s][%s] %s job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $name, $message->getQueue()));
+            $this->get('logger')->addNotice(sprintf('[%s][%s] %s job enqueued in %s.', date('Y-m-d\TH:i:s'), $message->getId(), $name, $message->getQueue()));
             $output->writeln(sprintf('<comment>[%s][%s] %s job enqueued in %s.</comment>', date('Y-m-d\TH:i:s'), substr($id, 0, 7), $name, $message->getQueue()));
         }
     }
@@ -247,7 +247,7 @@ class WorkerCommand extends ConfigAwareCommand
                 pcntl_waitpid($pid, $status);
             }
 
-            $this->getFactory()->unregisterWorker($this->id);
+            $this->get('factory')->unregisterWorker($this->id);
 
             exit;
         };

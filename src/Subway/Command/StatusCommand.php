@@ -11,7 +11,6 @@
 
 namespace Subway\Command;
 
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -52,12 +51,12 @@ class StatusCommand extends ConfigAwareCommand
     {
         $rows = array();
 
-        foreach ($this->getFactory()->getQueues() as $queue) {
+        foreach ($this->get('factory')->getQueues() as $queue) {
             $rows[$queue->getName()] = $queue->count();
         }
 
-        $delayedQueue   = $this->getFactory()->getDelayedQueue();
-        $repeatingQueue = $this->getFactory()->getRepeatingQueue();
+        $delayedQueue   = $this->get('factory')->getDelayedQueue();
+        $repeatingQueue = $this->get('factory')->getRepeatingQueue();
 
         if ($delayedCount = $delayedQueue->count()) {
             $rows[$delayedQueue->getName()] = $delayedCount;
@@ -79,7 +78,7 @@ class StatusCommand extends ConfigAwareCommand
     {
         $rows = array();
 
-        foreach ($this->getFactory()->getWorkers() as $worker) {
+        foreach ($this->get('factory')->getWorkers() as $worker) {
             list($host, $pid, $queues) = explode(':', $worker);
             $rows[] = array(
                 'host'   => $host,

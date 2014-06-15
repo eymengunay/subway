@@ -4,7 +4,7 @@
 /*
  * This file is part of the Subway package.
  *
- * (c) 2014 Eymen Gunay <eymen@egunay.com>
+ * (c) Eymen Gunay <eymen@egunay.com>
  * 
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,11 +13,12 @@
 require __DIR__.'/../vendor/autoload.php';
 
 use Subway\Application;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Console\Input\ArgvInput;
 
-$dispatcher  = new EventDispatcher();
+$input = new ArgvInput();
+if ($cwd = $input->getParameterOption(array('--cwd', '-c'))) {
+    chdir(realpath($cwd));
+}
 
 $application = new Application('Subway', '@package_version@');
-$application->setDispatcher($dispatcher);
-
-$application->run();
+$application->run($input);

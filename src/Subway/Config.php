@@ -23,32 +23,22 @@ use Symfony\Component\Yaml\Yaml;
 class Config implements ConfigurationInterface
 {
     /**
-     * @var string
-     */
-    protected $file;
-
-    /**
      * @var array
      */
     protected $config;
 
     /**
      * Class constructor
-     * 
-     * @param string $file Configuration file path
      */
-    public function __construct($file = null)
+    public function __construct()
     {
         $config    = array();
         $processor = new Processor();
 
-        if (is_null($file) === false && is_file($file) === false) {
-            throw new SubwayException("$file is not a valid file");
-        } elseif (is_null($file) === false) {
-            $config = Yaml::parse($file);   
+        if (file_exists('subway.yml')) {
+            $config = Yaml::parse('subway.yml');
         }
 
-        $this->file   = $file;
         $this->config = $processor->processConfiguration($this, array($config));
     }
 
@@ -90,16 +80,6 @@ class Config implements ConfigurationInterface
         ;
 
         return $treeBuilder;
-    }
-
-    /**
-     * Get file
-     * 
-     * @return string
-     */
-    public function getFile()
-    {
-        return $this->file;
     }
 
     /**

@@ -47,7 +47,7 @@ class ClearCommand extends ConfigAwareCommand
             }
         }
 
-        $this->getFactory()->clear();
+        $this->get('factory')->clear();
         $output->writeln('<info>Database cleared successfully</info>');
     }
 }

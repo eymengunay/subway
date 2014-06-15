@@ -43,7 +43,7 @@ class SampleCommand extends ConfigAwareCommand
             $message = new Message($input->getOption('queue'), 'Subway\Tests\Job\Md5Job', array(
                 'hello' => 'world'
             ));
-            $this->getFactory()->enqueue($message);
+            $this->get('factory')->enqueue($message);
             $output->writeln(sprintf('<info>Job %s enqueued in %s</info>', $message->getId(), $message->getQueue()));
         }
     }
