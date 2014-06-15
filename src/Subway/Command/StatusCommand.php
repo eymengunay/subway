@@ -27,7 +27,6 @@ class StatusCommand extends ConfigAwareCommand
         $this
             ->setName('status')
             ->setDescription('Show subway status')
-            ->addOption('live', 'l', InputOption::VALUE_NONE, 'Live status')
         ;
     }
 
