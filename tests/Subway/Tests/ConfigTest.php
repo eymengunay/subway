@@ -59,11 +59,10 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
 
     /**
      * Test inexistence
-     * 
-     * @expectedException Subway\Exception\SubwayException
      */
     public function testInexistence()
     {
-        new Config('/go-ahead-make-my-day');
+        $config = new Config('/go-ahead-make-my-day');
+        $this->assertEquals($config->get('host'), 'localhost:6379');
     }
 }

@@ -13,9 +13,10 @@ namespace Subway\Tests\Command;
 
 use Subway\Factory;
 use Subway\Config;
-use Subway\Command\ConfigAwareCommand;
+use Subway\Command\ContainerAwareCommand;
 use Predis\Client;
 use Monolog\Logger;
+use Pimple;
 use Symfony\Component\Console\Tester\CommandTester as BaseCommandTester;
 use Symfony\Component\Console\Command\Command;
 
@@ -41,19 +42,23 @@ class CommandTester extends BaseCommandTester
      */
     protected function bootstrap(Command $command)
     {
-        if ($command instanceof ConfigAwareCommand) {
-            $redis   = new Client('tcp://127.0.0.1:6379', array('prefix' => 'testz:'));
-            $factory = new Factory($redis);
-            $logger  = new Logger('subway');
-            $config  = new Config();
+        if ($command instanceof ContainerAwareCommand) {
+            $container = $command->getContainer();
+            $redis     = new Client('tcp://127.0.0.1:6379', array('prefix' => 'testz:'));
+            $factory   = new Factory($redis);
+            $logger    = new Logger('subway');
+            $config    = $command->get('config');
             $config->set('prefix', 'test:');
 
-            $command
-                ->setConfig($config)
-                ->setRedis($redis)
-                ->setLogger($logger)
-                ->setFactory($factory)
-            ;
+            $container['redis'] = function() use ($redis) {
+                return $redis;
+            };
+            $container['logger'] = function() use ($logger) {
+                return $logger;
+            };
+            $container['factory'] = function() use ($factory) {
+                return $factory;
+            };
         }
     }
 }

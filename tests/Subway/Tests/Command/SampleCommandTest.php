@@ -11,12 +11,9 @@
 
 namespace Subway\Tests\Command;
 
-use Subway\Config;
-use Subway\Factory;
 use Subway\Application;
-use Predis\Client;
-use Psr\Log\LoggerInterface;
 use Subway\Command\SampleCommand;
+use Pimple;
 
 /**
  * Sample command test
@@ -39,9 +36,6 @@ class SampleCommandTest extends \PHPUnit_Framework_TestCase
 
         $this->assertRegExp('/Job .* enqueued in sample/i', $display);
 
-        $this->assertTrue($command->getRedis() instanceof Client);
-        $this->assertTrue($command->getFactory() instanceof Factory);
-        $this->assertTrue($command->getConfig() instanceof Config);
-        $this->assertTrue($command->getLogger() instanceof LoggerInterface);
+        $this->assertTrue($command->getContainer() instanceof Pimple);
     }
 }
