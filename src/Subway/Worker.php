@@ -50,9 +50,12 @@ class Worker
     public function perform(Job $job)
     {
         $message = $job->getMessage();
+        $logger  = $this->factory->getLogger();
 
         try {
-            $this->factory->getLogger()->addNotice(sprintf('[%s] Starting job', $message->getId()));
+            if ($logger) {
+                $logger->addNotice(sprintf('[%s] Starting job', $message->getId()));
+            }
 
             $this->factory->updateStatus($message->getId(), Job::STATUS_RUNNING);
             $job->perform($message->getArgs());
@@ -61,7 +64,9 @@ class Worker
             $this->factory->getRedis()->incrby('resque:stat:processed', 1);
             $this->factory->getRedis()->incrby('resque:stat:processed:'.$this->id, 1);
 
-            $this->factory->getLogger()->addNotice(sprintf('[%s] Job finised successfully', $message->getId()));
+            if ($logger) {
+                $logger->addNotice(sprintf('[%s] Job finised successfully', $message->getId()));
+            }
         } catch (\Exception $e) {
             $this->exceptionHandler($e, $message);
 
@@ -95,6 +100,8 @@ class Worker
             'queue'     => $message->getQueue(),
         )));
         
-        $this->factory->getLogger()->addError(sprintf('[%s][%s] Job execution failed. %s:%s', date('Y-m-d\TH:i:s'), $message->getId(), get_class($e), $e->getMessage()));
+        if ($logger = $this->factory->getLogger()) {
+            $logger->addError(sprintf('[%s][%s] Job execution failed. %s:%s', date('Y-m-d\TH:i:s'), $message->getId(), get_class($e), $e->getMessage()));
+        }
     }
 }

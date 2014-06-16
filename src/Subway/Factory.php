@@ -51,14 +51,16 @@ class Factory
      * @param EventDispatcher $dispatcher
      * @param LoggerInterface $logger
      */
-    public function __construct(Client $redis, EventDispatcherInterface $dispatcher, LoggerInterface $logger)
+    public function __construct(Client $redis, EventDispatcherInterface $dispatcher = null, LoggerInterface $logger = null)
     {
         $this->redis      = $redis;
         $this->dispatcher = $dispatcher;
         $this->logger     = $logger;
 
-        $subscriber = new EventSubscriber($this);
-        $this->dispatcher->addSubscriber($subscriber);
+        if ($dispatcher) {
+            $subscriber = new EventSubscriber($this);
+            $this->dispatcher->addSubscriber($subscriber);
+        }
     }
 
     /**
@@ -174,7 +176,9 @@ class Factory
         $queue->put($message);
         $this->updateStatus($message->getId(), Job::STATUS_WAITING);
 
-        $this->getEventDispatcher()->dispatch(Events::ENQUEUE, new EnqueueEvent($message));
+        if ($this->dispatcher) {
+            $this->dispatcher->dispatch(Events::ENQUEUE, new EnqueueEvent($message));
+        }
 
         $this->messageAwareLog(LogLevel::NOTICE, sprintf('Job %s enqueued in %s', $message->getId(), $queue->getName()), $message);
 
@@ -218,10 +222,12 @@ class Factory
      */
     protected function messageAwareLog($level, $str, Message $message)
     {
-        $this->logger->log($level, $str, array(
-            'class' => $message->getClass(),
-            'args'  => $message->getArgs()
-        ));
+        if ($this->logger) {
+            $this->logger->log($level, $str, array(
+                'class' => $message->getClass(),
+                'args'  => $message->getArgs()
+            ));
+        }
     }
 
     /**
