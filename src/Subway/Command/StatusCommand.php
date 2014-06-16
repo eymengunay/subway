@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Status command
  */
-class StatusCommand extends ConfigAwareCommand
+class StatusCommand extends ContainerAwareCommand
 {
     /**
      * {@inheritdoc}

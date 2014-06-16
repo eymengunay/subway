@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Clear command
  */
-class ClearCommand extends ConfigAwareCommand
+class ClearCommand extends ContainerAwareCommand
 {
     /**
      * {@inheritdoc}

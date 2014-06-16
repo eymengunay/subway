@@ -19,7 +19,6 @@ use Pimple;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -38,9 +37,6 @@ class Application extends BaseApplication
     public function __construct($name = 'Subway', $version = 'UNKNOWN')
     {
         $this->container = new Pimple();
-        $this->container['config'] = function() {
-            return new Config();
-        };
 
         parent::__construct($name, $version);
     }
@@ -53,20 +49,6 @@ class Application extends BaseApplication
     public function getContainer()
     {
         return $this->container;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(Command $command)
-    {
-        $command = parent::add($command);
-
-        if ($command instanceof Commands\ConfigAwareCommand) {
-            $command->configureInputDefinition();
-        }
-
-        return $command;
     }
 
     /**
@@ -91,34 +73,25 @@ class Application extends BaseApplication
     /**
      * {@inheritdoc}
      */
-    protected function getDefaultInputDefinition()
-    {
-        $definition = parent::getDefaultInputDefinition();
-        
-        $options = array(
-            new InputOption('--cwd', '-c', InputOption::VALUE_REQUIRED, 'Working directory.'),
-        );
-        $definition->setOptions(array_merge($options, $definition->getOptions()));
-
-        return $definition;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function doRunCommand(Command $command, InputInterface $input, OutputInterface $output)
     {
-        // Configure
-        if ($command instanceof Commands\ConfigAwareCommand) {
-            $command->processConfiguration($input, $output);
-        }
-
         // Prepare container
         if ($command instanceof Commands\ContainerAwareCommand) {
-            $config = $this->container['config'];
+            // Prepare command input
+            $command->getSynopsis();
+            $command->mergeApplicationDefinition();
+            $input->bind($command->getDefinition());
+
+            // Register config service
+            $config = new Config();
+            $this->container['config'] = function() use ($config) {
+                return $config;
+            };
+            chdir($this->container['config']->get('root'));
+
             // Register redis service
             try {
-                $redis = new Client(sprintf('tcp://%s', $config->get('host')), array('prefix' => $config->get('prefix')));
+                $redis = new Client(sprintf('tcp://%s', $config->get('redis_host')), array('prefix' => $config->get('redis_prefix')));
                 $redis->connect();
             } catch (\Exception $e) {
                 return $output->writeln('<error> An error occured while connecting to redis! </error>');
@@ -131,8 +104,6 @@ class Application extends BaseApplication
             $defaultBridgeClass = sprintf('Subway\Bridge\%sBridge', ucfirst($config->get('bridge')));
             if (class_exists($defaultBridgeClass)) {
                 $bridgeClass = $defaultBridgeClass;
-            } elseif (class_exists($config->get('bridge'))) {
-                $bridgeClass = $config->get('bridge');
             } else {
                 throw new SubwayException('Bridge '.$config->get('bridge').' not found');
             }

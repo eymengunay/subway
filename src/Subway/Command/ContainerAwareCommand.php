@@ -13,12 +13,33 @@ namespace Subway\Command;
 
 use Pimple;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputOption;
 
 /**
  * Container aware command
  */
 abstract class ContainerAwareCommand extends Command
 {
+    /**
+     * Class constructor
+     * 
+     * @param string $name
+     */
+    public function __construct($name = null)
+    {
+        parent::__construct($name);
+
+        $this->configureDefault();
+    }
+
+    /**
+     * Configures the current command.
+     */
+    protected function configureDefault()
+    {
+        $this->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Configuration file path.', 'subway.yml');
+    }
+
     /**
      * Get container
      * 

@@ -19,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Sample command
  */
-class SampleCommand extends ConfigAwareCommand
+class SampleCommand extends ContainerAwareCommand
 {
     /**
      * {@inheritdoc}

@@ -10,15 +10,12 @@
  * file that was distributed with this source code.
  */
 
+date_default_timezone_set('UTC');
+set_time_limit(0);
+
 require __DIR__.'/../vendor/autoload.php';
 
 use Subway\Application;
-use Symfony\Component\Console\Input\ArgvInput;
-
-$input = new ArgvInput();
-if ($cwd = $input->getParameterOption(array('--cwd', '-c'))) {
-    chdir(realpath($cwd));
-}
 
 $application = new Application('Subway', '@package_version@');
-$application->run($input);
+$application->run();

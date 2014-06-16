@@ -23,7 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Worker command
  */
-class WorkerCommand extends ConfigAwareCommand
+class WorkerCommand extends ContainerAwareCommand
 {
     /**
      * @var string
