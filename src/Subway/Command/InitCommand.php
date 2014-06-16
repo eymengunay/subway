@@ -51,6 +51,7 @@ class InitCommand extends Command
         foreach ($node->getChildren() as $child) {
             $dumped .= $dumper->dumpNode($child);
         }
+        $dumped = trim($dumped);
         
         file_put_contents('subway.yml', $dumped);
         $output->writeln('<info>Subway configuration file subway.yml created successfully!</info>');

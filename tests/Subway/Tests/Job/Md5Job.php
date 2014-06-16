@@ -23,7 +23,7 @@ class Md5Job extends Job
      */
     public function perform()
     {
-        for ($i = 0; $i < 200000; $i++) {
+        for ($i = 0; $i < 200; $i++) {
             md5($i);
         }
     }
