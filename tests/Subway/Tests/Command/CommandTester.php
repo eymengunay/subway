@@ -47,7 +47,7 @@ class CommandTester extends BaseCommandTester
             $redis     = new Client('tcp://127.0.0.1:6379', array('prefix' => 'testz:'));
             $factory   = new Factory($redis);
             $logger    = new Logger('subway');
-            $config    = $command->get('config');
+            $config    = new Config();
             $config->set('prefix', 'test:');
 
             $container['redis'] = function() use ($redis) {
