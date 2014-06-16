@@ -29,14 +29,16 @@ class Config implements ConfigurationInterface
 
     /**
      * Class constructor
+     *
+     * @param string $file
      */
-    public function __construct()
+    public function __construct($file = 'subway.yml')
     {
         $config    = array();
         $processor = new Processor();
 
-        if (file_exists('subway.yml')) {
-            $config = Yaml::parse('subway.yml');
+        if (file_exists($file)) {
+            $config = Yaml::parse($file);
         }
 
         $this->config = $processor->processConfiguration($this, array($config));
@@ -54,19 +56,19 @@ class Config implements ConfigurationInterface
             ->children()
                 ->scalarNode('host')
                     ->defaultValue('localhost:6379')
-                    ->info('Redis connection dsn')
+                    ->info('Redis host')
                 ->end()
                 ->scalarNode('prefix')
                     ->defaultNull()
                     ->info('Redis prefix')
                 ->end()
-                ->scalarNode('autoload')
-                    ->defaultValue('vendor/autoload.php')
-                    ->info('Application autoloader')
+                ->scalarNode('bridge')
+                    ->defaultValue('symfony')
+                    ->info('Bridge type')
                 ->end()
-                ->scalarNode('log')
-                    ->defaultValue('subway.log')
-                    ->info('Log file path')
+                ->arrayNode('bridge_options')
+                    ->prototype('scalar')->end()
+                    ->info('Bridge options')
                 ->end()
                 ->integerNode('interval')
                     ->defaultValue(5)

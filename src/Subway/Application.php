@@ -12,10 +12,9 @@
 namespace Subway;
 
 use Subway\Command as Commands;
+use Subway\Exception\SubwayException;
 use Predis\Client;
 use Monolog\Logger;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Processor\MemoryPeakUsageProcessor;
 use Pimple;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Command\Command;
@@ -97,7 +96,7 @@ class Application extends BaseApplication
         $definition = parent::getDefaultInputDefinition();
         
         $options = array(
-            new InputOption('--cwd', '-c', InputOption::VALUE_REQUIRED, 'Working directory path.'),
+            new InputOption('--cwd', '-c', InputOption::VALUE_REQUIRED, 'Working directory.'),
         );
         $definition->setOptions(array_merge($options, $definition->getOptions()));
 
@@ -128,17 +127,32 @@ class Application extends BaseApplication
                 return $redis;
             };
 
+            // Register bridge service
+            $defaultBridgeClass = sprintf('Subway\Bridge\%sBridge', ucfirst($config->get('bridge')));
+            if (class_exists($defaultBridgeClass)) {
+                $bridgeClass = $defaultBridgeClass;
+            } elseif (class_exists($config->get('bridge'))) {
+                $bridgeClass = $config->get('bridge');
+            } else {
+                throw new SubwayException('Bridge '.$config->get('bridge').' not found');
+            }
+            $bridge = new $bridgeClass($config->get('bridge_options'));
+            $this->container['bridge'] = function() use ($bridge) {
+                return $bridge;
+            };
+
             // Register logger service
-            $logger = new Logger('subway');
-            $logger->pushProcessor(new MemoryPeakUsageProcessor());
-            $logger->pushHandler(new RotatingFileHandler($config->get('log'), 0, $this->guessLoggerLevel($output)));
-            $this->container['logger'] = function() use ($logger) {
-                return $logger;
+            $this->container['logger'] = function() use ($bridge) {
+                return $bridge->getLogger();
+            };
+
+            // Register event dispatcher service
+            $this->container['event_dispatcher'] = function() use ($bridge) {
+                return $bridge->getEventDispatcher();
             };
 
             // Register factory service
-            $factory = new Factory($redis);
-            $factory->setLogger($logger);
+            $factory = new Factory($redis, $this->container['event_dispatcher'], $this->container['logger']);
             $this->container['factory'] = function() use ($factory) {
                 return $factory;
             };

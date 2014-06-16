@@ -21,11 +21,8 @@ use Subway\Queue\RepeatingQueue;
 use Predis\Client;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use Monolog\Handler\RedisHandler;
-use Monolog\Processor\MemoryPeakUsageProcessor;
-use Monolog\Logger;
 use Doctrine\Common\Collections\ArrayCollection;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Factory class
@@ -43,32 +40,22 @@ class Factory
     protected $dispatcher;
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     protected $logger;
 
     /**
      * Class constructor
-     *
-     * @param Client $redis
+     * 
+     * @param Client          $redis
+     * @param EventDispatcher $dispatcher
+     * @param LoggerInterface $logger
      */
-    public function __construct(Client $redis)
+    public function __construct(Client $redis, EventDispatcherInterface $dispatcher, LoggerInterface $logger)
     {
-        $this->initialize($redis);
-    }
-
-    /**
-     * Initialize factory
-     *
-     * @param Client $redis
-     */
-    protected function initialize(Client $redis)
-    {
-        $this->redis = $redis;
-        $this->dispatcher = new EventDispatcher();
-        $this->logger = new Logger('subway');
-        $this->logger->pushProcessor(new MemoryPeakUsageProcessor());
-        $this->logger->pushHandler(new RedisHandler($redis, 'resque:logs', Logger::WARNING));
+        $this->redis      = $redis;
+        $this->dispatcher = $dispatcher;
+        $this->logger     = $logger;
 
         $subscriber = new EventSubscriber($this);
         $this->dispatcher->addSubscriber($subscriber);
@@ -189,9 +176,7 @@ class Factory
 
         $this->getEventDispatcher()->dispatch(Events::ENQUEUE, new EnqueueEvent($message));
 
-        if ($this->logger) {
-            $this->messageAwareLog(LogLevel::NOTICE, sprintf('Job %s enqueued in %s', $message->getId(), $queue->getName()), $message);
-        }
+        $this->messageAwareLog(LogLevel::NOTICE, sprintf('Job %s enqueued in %s', $message->getId(), $queue->getName()), $message);
 
         return $message->getId();
     }
@@ -301,18 +286,6 @@ class Factory
     public function getEventDispatcher()
     {
         return $this->dispatcher;
-    }
-
-    /**
-     * Set logger
-     * 
-     * @param LoggerInterface $logger
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-
-        return $this;
     }
 
     /**
