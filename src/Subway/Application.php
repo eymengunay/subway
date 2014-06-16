@@ -113,8 +113,9 @@ class Application extends BaseApplication
             };
 
             // Register logger service
-            $this->container['logger'] = function() use ($bridge) {
-                return $bridge->getLogger();
+            $level = $this->guessLoggerLevel($output);
+            $this->container['logger'] = function() use ($bridge, $level) {
+                return $bridge->getLogger($level);
             };
 
             // Register event dispatcher service

@@ -11,13 +11,15 @@
 
 namespace Subway\Bridge;
 
-use Subway\Bridge;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Processor\MemoryPeakUsageProcessor;
 use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
 /**
  * Symfony bridge
  */
-class SymfonyBridge extends Bridge
+class SymfonyBridge extends ComposerBridge
 {
     /**
      * @var ContainerInterface
@@ -29,7 +31,8 @@ class SymfonyBridge extends Bridge
      */
     public function initialize()
     {
-        require_once $this->getOptions()->get('autoload');
+        parent::initialize();
+
         require_once $this->getOptions()->get('kernel');
 
         $kernel = new \AppKernel($this->getOptions()->get('env'), $this->getOptions()->get('debug'));
@@ -57,6 +60,18 @@ class SymfonyBridge extends Bridge
     public function getContainer()
     {
         return $this->container;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getLogger($level = Logger::WARNING)
+    {
+        $logger = new Logger('subway');
+        $logger->pushProcessor(new MemoryPeakUsageProcessor());
+        $logger->pushHandler(new StreamHandler('app/logs/subway.log', $level));
+
+        return $logger;
     }
 
     /**

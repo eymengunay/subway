@@ -81,11 +81,14 @@ abstract class Bridge implements EventSubscriberInterface
      * 
      * @return Logger
      */
-    public function getLogger()
+    public function getLogger($level = Logger::WARNING)
     {
+        if (file_exists('logs') === false) {
+            mkdir('logs', 0777, true);
+        }
         $logger = new Logger('subway');
         $logger->pushProcessor(new MemoryPeakUsageProcessor());
-        $logger->pushHandler(new RotatingFileHandler('subway.log', 0));
+        $logger->pushHandler(new RotatingFileHandler('logs/subway.log', $level));
 
         return $logger;
     }
