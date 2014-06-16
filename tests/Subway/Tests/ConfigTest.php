@@ -25,12 +25,13 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
     {
         $config = new Config();
         $this->assertEquals(array(
-            'host'       => 'localhost:6379',
-            'prefix'     => null,
-            'autoload'   => 'vendor/autoload.php',
-            'log'        => 'subway.log',
-            'interval'   => 5,
-            'concurrent' => 5,
+            'redis_host'       => 'localhost:6379',
+            'redis_prefix'     => null,
+            'bridge'           => 'composer',
+            'bridge_options'   => array(),
+            'interval'         => 5,
+            'concurrent'       => 5,
+            'root'             => getcwd()
         ), $config->all());
     }
 
@@ -40,7 +41,7 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
     public function testGet()
     {
         $config = new Config();
-        $this->assertEquals($config->get('host'), 'localhost:6379');
+        $this->assertEquals($config->get('redis_host'), 'localhost:6379');
     }
 
     /**
@@ -49,10 +50,10 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
     public function testExistence()
     {
         $tmp = tempnam(sys_get_temp_dir(), 'subway.yml');
-        file_put_contents($tmp, 'host: 127.0.0.1:6379');
+        file_put_contents($tmp, 'redis_host: 127.0.0.1:6379');
         
         $config = new Config($tmp);
-        $this->assertEquals($config->get('host'), '127.0.0.1:6379');
+        $this->assertEquals($config->get('redis_host'), '127.0.0.1:6379');
 
         unlink($tmp);
     }
@@ -63,6 +64,6 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
     public function testInexistence()
     {
         $config = new Config('/go-ahead-make-my-day');
-        $this->assertEquals($config->get('host'), 'localhost:6379');
+        $this->assertEquals($config->get('redis_host'), 'localhost:6379');
     }
 }

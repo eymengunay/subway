@@ -11,10 +11,12 @@
 
 namespace Subway\Tests;
 
+use Subway\Factory;
 use Subway\Message;
 use Subway\Tests\TestCase;
 use Predis\Client;
 use Monolog\Logger;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -95,9 +97,11 @@ class FactoryTest extends TestCase
      */
     public function testGetEventDispatcher()
     {
-        $redis = $this->factory->getEventDispatcher();
+        $redis      = $this->factory->getRedis();
+        $dispatcher = new EventDispatcher();
+        $factory    = new Factory($redis, $dispatcher);
 
-        $this->assertTrue($redis instanceof EventDispatcherInterface);
+        $this->assertTrue($factory->getEventDispatcher() instanceof EventDispatcherInterface);
     }
 
     /**
@@ -122,9 +126,10 @@ class FactoryTest extends TestCase
      */
     public function testSetLogger()
     {
-        $logger = new Logger('subway');
-        $this->factory->setLogger($logger);
+        $redis   = $this->factory->getRedis();
+        $logger  = new Logger('subway');
+        $factory = new Factory($redis, null, $logger);
 
-        $this->assertEquals($logger, $this->factory->getLogger());
+        $this->assertEquals($logger, $factory->getLogger());
     }
 }
