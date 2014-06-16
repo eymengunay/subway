@@ -153,7 +153,7 @@ class WorkerCommand extends ContainerAwareCommand
                     $output->writeln(sprintf('[%s][%s] Starting job %s. Pid: %s Queue: %s', date('Y-m-d\TH:i:s'), substr($message->getId(), 0, 7), $job->getName(), $pid, $message->getQueue()));
                 } else {
                     // Reconnect to redis
-                    $redis = $this->getRedis();
+                    $redis = $this->get('redis');
                     if ($redis->isConnected()) {
                         $redis->disconnect();
                     }
