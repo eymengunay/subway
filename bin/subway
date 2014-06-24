@@ -10,8 +10,15 @@
  * file that was distributed with this source code.
  */
 
-date_default_timezone_set('UTC');
 set_time_limit(0);
+
+if (PHP_SAPI !== 'cli') {
+    throw new Exception('Subway should be invoked via the CLI version of PHP, not the '.PHP_SAPI.' SAPI');
+}
+
+if (function_exists('date_default_timezone_set') && function_exists('date_default_timezone_get')) {
+    date_default_timezone_set(@date_default_timezone_get());
+}
 
 require __DIR__.'/../vendor/autoload.php';
 
