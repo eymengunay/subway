@@ -82,12 +82,13 @@ class Application extends BaseApplication
             $command->mergeApplicationDefinition();
             $input->bind($command->getDefinition());
 
+            chdir(realpath($input->getOption('cwd')));
+
             // Register config service
             $config = new Config();
             $this->container['config'] = function() use ($config) {
                 return $config;
             };
-            chdir($this->container['config']->get('root'));
 
             // Register redis service
             try {

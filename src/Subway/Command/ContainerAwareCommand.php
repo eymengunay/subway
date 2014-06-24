@@ -33,11 +33,11 @@ abstract class ContainerAwareCommand extends Command
     }
 
     /**
-     * Configures the current command.
+     * Configures the current command
      */
     protected function configureDefault()
     {
-        $this->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Configuration file path.', 'subway.yml');
+        $this->addOption('cwd', 'w', InputOption::VALUE_REQUIRED, 'Current working directory.', getcwd());
     }
 
     /**

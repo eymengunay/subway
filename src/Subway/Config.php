@@ -29,19 +29,21 @@ class Config implements ConfigurationInterface
 
     /**
      * Class constructor
-     *
-     * @param string $file
      */
-    public function __construct($file = 'subway.yml')
+    public function __construct()
     {
-        $config    = array();
+        $configs   = array();
         $processor = new Processor();
 
-        if (file_exists($file)) {
-            $config = Yaml::parse($file);
+        if (file_exists('subway.yml.dist')) {
+            $configs[] = Yaml::parse('subway.yml.dist');
         }
 
-        $this->config = $processor->processConfiguration($this, array($config));
+        if (file_exists('subway.yml')) {
+            $configs[] = Yaml::parse('subway.yml');
+        }
+
+        $this->config = $processor->processConfiguration($this, $configs);
     }
 
     /**
@@ -61,10 +63,6 @@ class Config implements ConfigurationInterface
                 ->scalarNode('redis_prefix')
                     ->defaultNull()
                     ->info('Redis prefix')
-                ->end()
-                ->scalarNode('root')
-                    ->defaultValue(getcwd())
-                    ->info('Application root directory')
                 ->end()
                 ->scalarNode('bridge')
                     ->defaultValue('composer')
