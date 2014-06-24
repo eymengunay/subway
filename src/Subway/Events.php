@@ -26,4 +26,15 @@ final class Events
      * @var string
      */
     const ENQUEUE = 'enqueue';
+
+    /**
+     * The status event is thrown on
+     * each time a job status gets updated.
+     *
+     * The event listener receives an
+     * Subway\Event\StatusEvent instance.
+     *
+     * @var string
+     */
+    const STATUS = 'status';
 }

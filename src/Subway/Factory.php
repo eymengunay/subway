@@ -15,6 +15,7 @@ use Subway\Events;
 use Subway\Queue;
 use Subway\Job;
 use Subway\Event\EnqueueEvent;
+use Subway\Event\StatusEvent;
 use Subway\Event\EventSubscriber;
 use Subway\Queue\DelayedQueue;
 use Subway\Queue\RepeatingQueue;
@@ -264,6 +265,10 @@ class Factory
             'status'  => $status,
             'updated' => time(),
         )));
+
+        if ($this->dispatcher) {
+            $this->dispatcher->dispatch(Events::STATUS, new StatusEvent($id, $status));
+        }
 
         // Set an expiration for completed jobs
         switch ($status) {
