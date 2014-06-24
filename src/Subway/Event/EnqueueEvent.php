@@ -11,36 +11,9 @@
 
 namespace Subway\Event;
 
-use Subway\Message;
-use Symfony\Component\EventDispatcher\Event;
-
 /**
  * Enqueue event
  */
-class EnqueueEvent extends Event
+class EnqueueEvent extends MessageEvent
 {
-    /**
-     * @var Message
-     */
-    protected $message;
-
-    /**
-     * Class constructor
-     * 
-     * @param Message $message
-     */
-    public function __construct(Message $message)
-    {
-        $this->message = $message;
-    }
-
-    /**
-     * Get message
-     * 
-     * @return Message
-     */
-    public function getMessage()
-    {
-        return $this->message;
-    }
 }
