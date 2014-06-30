@@ -43,8 +43,6 @@ class StatusCommand extends ContainerAwareCommand
             throw new SubwayException(sprintf('Unsupported format "%s".', $input->getOption('format')));
         }
 
-        $formatter = $this->getHelperSet()->get('formatter');
-
         $queue  = $this->queueStatus($input, $output);
         $worker = $this->workerStatus($input, $output);
 

@@ -86,9 +86,7 @@ class Application extends BaseApplication
 
             // Register config service
             $config = new Config();
-            $this->container['config'] = function() use ($config) {
-                return $config;
-            };
+            $command->setService('config', $config);
 
             // Register redis service
             try {
@@ -97,9 +95,7 @@ class Application extends BaseApplication
             } catch (\Exception $e) {
                 return $output->writeln('<error> An error occured while connecting to redis! </error>');
             }
-            $this->container['redis'] = function() use ($redis) {
-                return $redis;
-            };
+            $command->setService('redis', $redis);
 
             // Register bridge service
             $defaultBridgeClass = sprintf('Subway\Bridge\%sBridge', ucfirst($config->get('bridge')));
@@ -109,26 +105,18 @@ class Application extends BaseApplication
                 throw new SubwayException('Bridge '.$config->get('bridge').' not found');
             }
             $bridge = new $bridgeClass($config->get('bridge_options'));
-            $this->container['bridge'] = function() use ($bridge) {
-                return $bridge;
-            };
+            $command->setService('bridge', $bridge);
 
             // Register logger service
             $level = $this->guessLoggerLevel($output);
-            $this->container['logger'] = function() use ($bridge, $level) {
-                return $bridge->getLogger($level);
-            };
+            $command->setService('logger', $bridge->getLogger($level));
 
             // Register event dispatcher service
-            $this->container['event_dispatcher'] = function() use ($bridge) {
-                return $bridge->getEventDispatcher();
-            };
+            $command->setService('event_dispatcher', $bridge->getEventDispatcher());
 
             // Register factory service
             $factory = new Factory($redis, $this->container['event_dispatcher'], $this->container['logger']);
-            $this->container['factory'] = function() use ($factory) {
-                return $factory;
-            };
+            $command->setService('factory', $factory);
         }
 
         return parent::doRunCommand($command, $input, $output);
