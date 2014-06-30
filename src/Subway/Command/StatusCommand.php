@@ -11,6 +11,8 @@
 
 namespace Subway\Command;
 
+use Subway\Exception\SubwayException;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -27,6 +29,7 @@ class StatusCommand extends ContainerAwareCommand
         $this
             ->setName('status')
             ->setDescription('Show subway status')
+            ->addOption('format', null, InputOption::VALUE_REQUIRED, 'To output help in other formats', 'txt')
         ;
     }
 
@@ -34,11 +37,35 @@ class StatusCommand extends ContainerAwareCommand
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output)
-    {   
-        $output->writeln(json_encode(array(
-            'queue'  => $this->queueStatus($input, $output),
-            'worker' => $this->workerStatus($input, $output)
-        ), JSON_PRETTY_PRINT));
+    {
+        $formats = array('txt', 'json');
+        if (in_array($input->getOption('format'), $formats) === false) {
+            throw new SubwayException(sprintf('Unsupported format "%s".', $input->getOption('format')));
+        }
+
+        $formatter = $this->getHelperSet()->get('formatter');
+
+        $queue  = $this->queueStatus($input, $output);
+        $worker = $this->workerStatus($input, $output);
+
+        switch ($input->getOption('format')) {
+            case 'json':
+                $outstr = json_encode(array('queue' => $queue, 'worker' => $worker), JSON_PRETTY_PRINT);
+                $output->writeln($outstr);
+                break;
+            case 'txt':
+            default:
+                $output->writeln(sprintf('<info>Queues (%s)</info>', count($queue)));
+                foreach ($queue as $key => $val) {
+                    $output->writeln(sprintf('  * %s: %s', ucfirst($key), $val));
+                }
+
+                $output->writeln(sprintf('<info>Workers (%s)</info>', count($worker)));
+                foreach ($worker as $val) {
+                    $output->writeln(sprintf('  * Host: %s PID: %s', $val['host'], $val['pid']));
+                }
+                break;
+        }
     }
 
     /**
