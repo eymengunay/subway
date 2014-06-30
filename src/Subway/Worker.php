@@ -57,9 +57,9 @@ class Worker
                 $logger->addNotice(sprintf('[%s] Starting job', $message->getId()));
             }
 
-            $this->factory->updateStatus($message->getId(), Job::STATUS_RUNNING);
+            $this->factory->updateStatus($message, Job::STATUS_RUNNING);
             $job->perform($message->getArgs());
-            $this->factory->updateStatus($message->getId(), Job::STATUS_COMPLETE);
+            $this->factory->updateStatus($message, Job::STATUS_COMPLETE);
 
             $this->factory->getRedis()->incrby('resque:stat:processed', 1);
             $this->factory->getRedis()->incrby('resque:stat:processed:'.$this->id, 1);
@@ -87,7 +87,7 @@ class Worker
      */
     protected function exceptionHandler(\Exception $e, Message $message)
     {
-        $this->factory->updateStatus($message->getId(), Job::STATUS_FAILED);
+        $this->factory->updateStatus($message, Job::STATUS_FAILED);
         $this->factory->getRedis()->incrby('resque:stat:failed', 1);
         $this->factory->getRedis()->incrby('resque:stat:failed:'.$this->id, 1);
         $this->factory->getRedis()->rpush('resque:failed', json_encode(array(

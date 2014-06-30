@@ -175,7 +175,7 @@ class Factory
     {
         $queue = $this->guessMessageQueue($message);
         $queue->put($message);
-        $this->updateStatus($message->getId(), Job::STATUS_WAITING);
+        $this->updateStatus($message, Job::STATUS_WAITING);
 
         if ($this->dispatcher) {
             $this->dispatcher->dispatch(Events::ENQUEUE, new EnqueueEvent($message));
@@ -256,18 +256,20 @@ class Factory
     /**
      * Update status
      * 
-     * @param string $id
-     * @param int    $status
+     * @param Message $message
+     * @param integer $status
      */
-    public function updateStatus($id, $status)
+    public function updateStatus(Message $message, $status)
     {
+        $id = $message->getId();
+
         $this->redis->set("resque:job:$id:status", json_encode(array(
             'status'  => $status,
             'updated' => time(),
         )));
 
         if ($this->dispatcher) {
-            $this->dispatcher->dispatch(Events::STATUS, new StatusEvent($id, $status));
+            $this->dispatcher->dispatch(Events::STATUS, new StatusEvent($message, $status));
         }
 
         // Set an expiration for completed jobs

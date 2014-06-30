@@ -11,18 +11,13 @@
 
 namespace Subway\Event;
 
-use Symfony\Component\EventDispatcher\Event;
+use Subway\Message;
 
 /**
  * Status event
  */
-class StatusEvent extends Event
+class StatusEvent extends MessageEvent
 {
-    /**
-     * @var string
-     */
-    protected $id;
-
     /**
      * @var integer
      */
@@ -31,23 +26,14 @@ class StatusEvent extends Event
     /**
      * Class constructor
      *
-     * @param string  $id
+     * @param Message $message
      * @param integer $status
      */
-    public function __construct($id, $status)
+    public function __construct(Message $message, $status)
     {
-        $this->id     = $id;
-        $this->status = $status;
-    }
+        parent::__construct($message);
 
-    /**
-     * Get id
-     * 
-     * @return string
-     */
-    public function getId()
-    {
-        return $this->id;
+        $this->status = $status;
     }
 
     /**
