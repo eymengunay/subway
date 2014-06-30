@@ -11,6 +11,7 @@
 
 namespace Subway;
 
+use Subway\Util\JsonSerializer;
 use Predis\Client;
 
 /**
@@ -36,8 +37,9 @@ class Queue
      */
     public function __construct(Client $redis, $name)
     {
-        $this->redis = $redis;
-        $this->name  = $name;
+        $this->redis      = $redis;
+        $this->name       = $name;
+        $this->serializer = new JsonSerializer();
 
         $this->create();
     }
@@ -99,7 +101,7 @@ class Queue
         $messages = $this->redis->lrange(sprintf('resque:queue:%s', $this->getName()), 0, -1) ?: array();
         $data = array();
         foreach ($messages as $message) {
-            $data[] = Message::jsonUnserialize($message);
+            $data[] = $this->serializer->unserialize($message);
         }
 
         return $data;
@@ -118,7 +120,7 @@ class Queue
             return;
         }
 
-        return Message::jsonUnserialize($message);
+        return $this->serializer->unserialize($message);
     }
 
     /**
@@ -133,7 +135,7 @@ class Queue
             return;
         }
 
-        return Message::jsonUnserialize($message);
+        return $this->serializer->unserialize($message);
     }
 
     /**
@@ -143,6 +145,6 @@ class Queue
      */
     public function put(Message $message)
     {
-        $this->redis->rpush(sprintf('resque:queue:%s', $this->getName()), json_encode($message));
+        $this->redis->rpush(sprintf('resque:queue:%s', $this->getName()), $this->serializer->serialize($message));
     }
 }

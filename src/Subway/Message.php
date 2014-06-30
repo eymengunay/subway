@@ -17,7 +17,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 /**
  * Message
  */
-class Message implements \JsonSerializable
+class Message
 {
     /**
      * @var string
@@ -64,55 +64,6 @@ class Message implements \JsonSerializable
         $this->id    = sha1(uniqid($this->getHash(), true));
 
         return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function jsonSerialize()
-    {
-        $data = array(
-            'id'    => $this->getId(),
-            'queue' => $this->getQueue(),
-            'class' => $this->getClass(),
-            'args'  => $this->getArgs()->toArray()
-        );
-
-        if ($at = $this->getAt()) {
-            $data['at'] = $at->format('c');
-        }
-
-        if ($interval = $this->getInterval()) {
-            $data['interval'] = $interval;
-        }
-
-        return $data;
-    }
-
-    /**
-     * Json unserialize
-     * 
-     * @param  string  $str
-     * @return Message
-     */
-    public static function jsonUnserialize($str)
-    {
-        $array = json_decode($str, true);
-        $instance = new self($array['queue'], $array['class'], $array['args']);
-
-        if (array_key_exists('id', $array)) {
-            $instance->setId($array['id']);
-        }
-
-        if (array_key_exists('at', $array)) {
-            $instance->setAt(new \DateTime($array['at']));
-        }
-
-        if (array_key_exists('interval', $array)) {
-            $instance->setInterval($array['interval']);
-        }
-
-        return $instance;
     }
 
     /**

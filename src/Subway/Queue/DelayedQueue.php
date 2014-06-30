@@ -75,7 +75,7 @@ class DelayedQueue extends Queue
         foreach ($timestamps as $timestamp) {
             $items = $this->redis->lrange(sprintf('resque:%s:%s', $this->getName(), $timestamp), 0, -1);
             foreach ($items as $message) {
-                $messages[] = Message::jsonUnserialize($message);
+                $messages[] = $this->serializer->unserialize($message);
             }
         }
 
@@ -93,7 +93,7 @@ class DelayedQueue extends Queue
         $items   = $this->redis->lrange(sprintf('resque:%s:%s', $this->getName(), $timestamp), 0, 0);
         $message = current($items);
         
-        return Message::jsonUnserialize($message);
+        return $this->serializer->unserialize($message);
     }
 
     /**
@@ -114,7 +114,7 @@ class DelayedQueue extends Queue
             $this->redis->zrem(sprintf('resque:%s_queue_schedule', $this->getName()), $timestamps[0]);
         }
 
-        return $item ? Message::jsonUnserialize($item) : null;
+        return $item ? $this->serializer->unserialize($message) : null;
     }
 
     /**
@@ -123,7 +123,7 @@ class DelayedQueue extends Queue
     public function put(Message $message)
     {
         $at = $message->getAt()->format('U');
-        $this->redis->rpush(sprintf('resque:%s:%s', $this->getName(), $at), json_encode($message));
+        $this->redis->rpush(sprintf('resque:%s:%s', $this->getName(), $at), $this->serializer->serialize($message));
         $this->redis->zadd(sprintf('resque:%s_queue_schedule', $this->getName()), $at, $at);
     }
 }
