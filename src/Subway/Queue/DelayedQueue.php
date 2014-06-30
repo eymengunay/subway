@@ -114,7 +114,7 @@ class DelayedQueue extends Queue
             $this->redis->zrem(sprintf('resque:%s_queue_schedule', $this->getName()), $timestamps[0]);
         }
 
-        return $item ? $this->serializer->unserialize($message) : null;
+        return $item ? $this->serializer->unserialize($item) : null;
     }
 
     /**
