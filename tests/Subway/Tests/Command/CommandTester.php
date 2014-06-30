@@ -44,7 +44,7 @@ class CommandTester extends BaseCommandTester
     {
         if ($command instanceof ContainerAwareCommand) {
             $container = $command->getContainer();
-            $redis     = new Client('tcp://127.0.0.1:6379', array('prefix' => 'testz:'));
+            $redis     = new Client('tcp://127.0.0.1:6379', array('prefix' => 'test:'));
             $factory   = new Factory($redis);
             $logger    = new Logger('subway');
             $config    = new Config();

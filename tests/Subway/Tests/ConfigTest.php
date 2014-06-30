@@ -30,8 +30,7 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
             'bridge'           => 'composer',
             'bridge_options'   => array(),
             'interval'         => 5,
-            'concurrent'       => 5,
-            'root'             => getcwd()
+            'concurrent'       => 5
         ), $config->all());
     }
 
@@ -49,13 +48,16 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
      */
     public function testExistence()
     {
-        $tmp = tempnam(sys_get_temp_dir(), 'subway.yml');
+        $cwd = getcwd();
+        chdir(sys_get_temp_dir());
+        $tmp = 'subway.yml.dist';
         file_put_contents($tmp, 'redis_host: 127.0.0.1:6379');
         
-        $config = new Config($tmp);
+        $config = new Config();
         $this->assertEquals($config->get('redis_host'), '127.0.0.1:6379');
 
         unlink($tmp);
+        chdir($cwd);
     }
 
     /**

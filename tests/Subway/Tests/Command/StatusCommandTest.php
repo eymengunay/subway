@@ -29,8 +29,9 @@ class StatusCommandTest extends \PHPUnit_Framework_TestCase
 
         $command       = $application->find('status');
         $commandTester = new CommandTester($command);
-        $commandTester->execute(array());
-
+        
+        // Json
+        $commandTester->execute(array('--format' => 'json'));
         $json   = $commandTester->getDisplay();
         $status = json_decode($json, true);
 
@@ -39,5 +40,10 @@ class StatusCommandTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue(is_array($status['queue']));
         $this->assertTrue(is_array($status['worker']));
+
+        // Text
+        $commandTester->execute(array('--format' => 'txt'));
+        $text = $commandTester->getDisplay();
+        $this->assertTrue(strpos($text, 'Queues') !== FALSE);
     }
 }

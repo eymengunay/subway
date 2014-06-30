@@ -13,6 +13,7 @@ Nuclear reactor powered background job processing for PHP.
 * Repeating jobs
 * Resque compatible db
 * Configurable logging
+* Supports composer and symfony based apps out-of-box
 
 ## Requirements
 * A POSIX-oriented operating system (No windows support due to pcntl dependency)
