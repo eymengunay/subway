@@ -20,9 +20,9 @@ use Subway\Tests\TestCase;
 class DelayedQueueTest extends TestCase
 {
     /**
-     * Test queue count
+     * Test queue empty count
      */
-    public function testQueueCount()
+    public function testQueueEmptyCount()
     {
         $queue = $this->factory->getDelayedQueue();
         $count = $queue->count();
@@ -56,7 +56,7 @@ class DelayedQueueTest extends TestCase
     /**
      * Test queue get jobs
      *
-     * @depends testQueueCount
+     * @depends testQueueEmptyCount
      */
     public function testQueueGetJob()
     {
@@ -66,6 +66,17 @@ class DelayedQueueTest extends TestCase
 
         $this->assertEquals('array', gettype($messages));
         $this->assertEquals('default', $message->getQueue());
+    }
+
+    /**
+     * Test queue count
+     */
+    public function testQueueCount()
+    {
+        $queue = $this->factory->getDelayedQueue();
+        $count = $queue->count();
+
+        $this->assertGreaterThanOrEqual(1, $count);
     }
 
     /**
@@ -94,5 +105,34 @@ class DelayedQueueTest extends TestCase
 
         $this->assertEquals('Subway\Tests\Job\Md5Job', $message->getClass());
         $this->assertEquals(array('hello' => 'world'), $message->getArgs()->toArray());
+    }
+
+    /**
+     * Test queue empty pop
+     *
+     * @depends testQueuePop
+     */
+    public function testQueueEmptyPop()
+    {
+        $queue = $this->factory->getDelayedQueue();
+        $message = $queue->pop();
+
+        $this->assertNull($message);
+    }
+
+    /**
+     * Test queue clear
+     *
+     * @depends testQueueEmptyPop
+     */
+    public function testQueueClear()
+    {
+        $message = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $message->setAt(new \DateTime('-29 second'));
+
+        $this->factory->enqueue($message);
+
+        $queue = $this->factory->getDelayedQueue();
+        $queue->clear();
     }
 }

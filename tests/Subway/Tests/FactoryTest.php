@@ -15,7 +15,7 @@ use Subway\Factory;
 use Subway\Message;
 use Subway\Tests\TestCase;
 use Predis\Client;
-use Monolog\Logger;
+use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -43,8 +43,12 @@ class FactoryTest extends TestCase
      */
     public function testEnqueue()
     {
-        $message = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
-        $id = $this->factory->enqueue($message);
+        $redis      = $this->factory->getRedis();
+        $logger     = new NullLogger('subway');
+        $dispatcher = new EventDispatcher();
+        $factory    = new Factory($redis, $dispatcher, $logger);
+        $message    = new Message('default', 'Subway\Tests\Job\Md5Job', array('hello' => 'world'));
+        $id = $factory->enqueue($message);
 
         $this->assertTrue((bool) $id);
     }
@@ -127,7 +131,7 @@ class FactoryTest extends TestCase
     public function testSetLogger()
     {
         $redis   = $this->factory->getRedis();
-        $logger  = new Logger('subway');
+        $logger  = new NullLogger('subway');
         $factory = new Factory($redis, null, $logger);
 
         $this->assertEquals($logger, $factory->getLogger());

@@ -82,4 +82,17 @@ class RepeatingQueueTest extends TestCase
         $this->assertEquals('Subway\Tests\Job\Md5Job', $message->getClass());
         $this->assertEquals(array('hello' => 'world'), $message->getArgs()->toArray());
     }
+
+    /**
+     * Test queue pop
+     *
+     * @depends testQueuePop
+     */
+    public function testQueueEmptyPop()
+    {
+        $queue = $this->factory->getRepeatingQueue();
+        $message = $queue->pop();
+
+        $this->assertNull($message);
+    }
 }

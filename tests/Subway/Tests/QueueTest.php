@@ -117,4 +117,30 @@ class QueueTest extends TestCase
         $this->assertEquals('Subway\Tests\Job\Md5Job', $message->getClass());
         $this->assertEquals(array('hello' => 'world'), $message->getArgs()->toArray());
     }
+
+    /**
+     * Test queue empty pop
+     *
+     * @depends testQueuePop
+     */
+    public function testQueueEmptyPop()
+    {
+        $queue = $this->factory->getQueue('default');
+        $message = $queue->pop();
+
+        $this->assertNull($message);
+    }
+
+    /**
+     * Test queue empty get next message
+     *
+     * @depends testQueueEmptyPop
+     */
+    public function testQueueEmptyGetNext()
+    {
+        $queue = $this->factory->getQueue('default');
+        $message = $queue->getNextMessage();
+
+        $this->assertNull($message);
+    }
 }

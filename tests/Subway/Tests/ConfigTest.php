@@ -44,6 +44,16 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test inexisting get
+     */
+    public function testInexistingGet()
+    {
+        $this->setExpectedException('Subway\Exception\SubwayException');
+        $config = new Config();
+        $config->get('hello_world');
+    }
+
+    /**
      * Test existence
      */
     public function testExistence()
