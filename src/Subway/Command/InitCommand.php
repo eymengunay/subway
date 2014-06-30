@@ -41,7 +41,9 @@ class InitCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if ((bool) $input->getOption('force') === false && file_exists('subway.yml') === true) {
-            return $output->writeln('<error> Subway configuration file subway.yml already exists! </error>');
+            $output->writeln('<error> Subway configuration file subway.yml already exists! </error>');
+
+            return 1;
         }
 
         $dumped = '';

@@ -33,5 +33,11 @@ class InitCommandTest extends \PHPUnit_Framework_TestCase
 
         $display = $commandTester->getDisplay();
         $this->assertEquals('Subway configuration file subway.yml created successfully!', trim($display));
+        $this->assertEquals($commandTester->getStatusCode(), 0);
+
+        $commandTester->execute(array('--force' => false));
+        $display = $commandTester->getDisplay();
+        $this->assertEquals('Subway configuration file subway.yml already exists!', trim($display));
+        $this->assertEquals($commandTester->getStatusCode(), 1);
     }
 }
