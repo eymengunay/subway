@@ -35,12 +35,12 @@ class Message
     protected $class;
 
     /**
-     * @var array
+     * @var ArrayCollection
      */
     protected $args;
 
     /**
-     * @var DateTime
+     * @var \DateTime
      */
     protected $at;
 
@@ -186,7 +186,7 @@ class Message
     /**
      * Get at
      * 
-     * @return DateTime 
+     * @return \DateTime 
      */
     public function getAt()
     {

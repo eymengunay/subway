@@ -36,7 +36,7 @@ class Factory
     protected $redis;
 
     /**
-     * @var EventDispatcher
+     * @var EventDispatcherInterface
      */
     protected $dispatcher;
 
@@ -48,9 +48,9 @@ class Factory
     /**
      * Class constructor
      * 
-     * @param Client          $redis
-     * @param EventDispatcher $dispatcher
-     * @param LoggerInterface $logger
+     * @param Client                   $redis
+     * @param EventDispatcherInterface $dispatcher
+     * @param LoggerInterface          $logger
      */
     public function __construct(Client $redis, EventDispatcherInterface $dispatcher = null, LoggerInterface $logger = null)
     {

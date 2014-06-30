@@ -30,6 +30,11 @@ class Queue
     protected $name;
 
     /**
+     * @var JsonSerializer
+     */
+    protected $serializer;
+
+    /**
      * Class constructor
      *
      * @param Client $redis
