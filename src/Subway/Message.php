@@ -78,8 +78,8 @@ class Message
             throw new SubwayException("Could not find job class $class");
         }
 
-        if (!method_exists($class, 'perform')) {
-            throw new SubwayException("Job class $class does not contain a perform method");
+        if (is_subclass_of($class, 'Subway\Job') === false) {
+            throw new SubwayException("Job class \"$class\" must be an instance of \"Subway\Job\"");
         }
 
         $instance = new $class;
