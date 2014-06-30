@@ -15,8 +15,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Monolog\Logger;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Processor\MemoryPeakUsageProcessor;
-use Symfony\Component\Config\Definition\Builder\TreeBuilder;
-use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
